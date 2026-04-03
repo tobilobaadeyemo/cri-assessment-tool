@@ -208,6 +208,16 @@
   .tab { padding: 10px 20px; font-size: 14px; color: var(--gray-600); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
   .tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 500; }
   .tab:hover:not(.active) { color: var(--gray-800); }
+    /* Premium animations & glassmorphism */
+    .fade-up { animation: fadeUp 0.5s ease forwards; opacity: 0; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -12px rgba(0,0,0,0.15); }
+    .btn-glow { transition: box-shadow 0.2s ease; }
+    .btn-glow:hover { box-shadow: 0 0 12px rgba(0,85,164,0.5); }
+    .glass-card { background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); }
+    .page-transition { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 </style>
 </head>
 <body>
