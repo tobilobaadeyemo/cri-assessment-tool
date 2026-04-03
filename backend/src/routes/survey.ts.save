@@ -9,7 +9,7 @@ export const surveyRouter = Router();
 // ── Get survey by token (public) ───────────────────────────────
 surveyRouter.get('/:token', async (req, res) => {
   try {
-    const token = req.params!.token;
+    const token = req.params.token;
     if (!token) {
       return res.status(400).json({ error: 'Missing survey token' });
     }
@@ -53,7 +53,7 @@ surveyRouter.post('/:token/submit',
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     const { answers } = req.body;
-    const token = req.params!.token;
+    const token = req.params.token;
     if (!token) {
       return res.status(400).json({ error: 'Missing survey token' });
     }
@@ -208,4 +208,3 @@ async function autoComputeAndNotify(assessment: any) {
       },
     });
   }
-}
