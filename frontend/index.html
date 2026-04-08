@@ -8,7 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-<style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
@@ -214,6 +214,12 @@
 <div id="root"></div>
 
 <script type="text/babel">
+const supabaseUrl = 'https://vvoiagwlfhowdyxlkpln.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2b2lhZ3dsZmhvd2R5eGxrcGxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjQyMTQsImV4cCI6MjA5MDgwMDIxNH0.pOX5E5p3tI8lVO5Bi9Ze5tDmv-_9j3gqLUFn7pN2lB8';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+const supabaseUrl = 'https://vvoiagwlfhowdyxlkpln.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2b2lhZ3dsZmhvd2R5eGxrcGxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjQyMTQsImV4cCI6MjA5MDgwMDIxNH0.pOX5E5p3tI8lVO5Bi9Ze5tDmv-_9j3gqLUFn7pN2lB8';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
 const { useState, useEffect, useCallback, useRef, createContext, useContext } = React;
 
 // ── API Client ─────────────────────────────────────────────────
