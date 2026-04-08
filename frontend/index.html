@@ -480,330 +480,35 @@ function RegisterPage({ navigate }) {
   const [loading, setLoading] = useState(false);
 
   const submit = async (e) => {
-        e.preventDefault();
-    if (!form.gdprConsent) { setError('You must consent to data processing to continue.'); return; }
-    setError(''); setLoading(true);
-        try {
-      const data = await apiFetch('/auth/register', { method:'POST', body: JSON.stringify({...form, gdprConsent: true}) });
-            navigate("/dashboard");
-      navigate('/dashboard');
-    }     } catch (err) {
+    e.preventDefault();
+    if (!form.gdprConsent) { setError("You must consent to data processing to continue."); return; }
+    setError("");
+    setLoading(true);
+    try {
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+        options: {
+          data: {
+            first_name: form.firstName,
+            last_name: form.lastName,
+            organisation_name: form.orgName,
+            industry: form.industry
+          }
+        }
+      });
+      if (signUpError) throw signUpError;
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password: form.password
+      });
+      if (signInError) throw signInError;
+      navigate("/dashboard");
+    } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-    finally { setLoading(false); }
-
-  const f = (k) => e => setForm(p => ({...p, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value}));
-
-  return (
-    <div style={{minHeight:'100vh', background:'var(--gray-50)', padding:'40px 20px'}}>
-      <div style={{maxWidth:480, margin:'0 auto'}}>
-        <div style={{textAlign:'center', marginBottom:32}}>
-          <h1 style={{fontSize:22, fontWeight:700, color:'var(--navy)'}}>Create your CRI account</h1>
-          <p style={{fontSize:14, color:'var(--gray-600)', marginTop:4}}>Start measuring cultural readiness today</p>
-        </div>
-        <div className="card">
-          <div className="card-body">
-            {error && <div className="alert alert-error">{error}</div>}
-            <form onSubmit={submit}>
-              <div className="two-col">
-                <div className="form-group">
-                  <label className="form-label">First name</label>
-                  <input type="text" className="form-input" required value={form.firstName} onChange={f('firstName')} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Last name</label>
-                  <input type="text" className="form-input" required value={form.lastName} onChange={f('lastName')} />
-                </div>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Work email</label>
-                <input type="email" className="form-input" required value={form.email} onChange={f('email')} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Password</label>
-                <input type="password" className="form-input" required minLength={8} value={form.password} onChange={f('password')} />
-                <div className="form-hint">Minimum 8 characters</div>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Organisation name</label>
-                <input type="text" className="form-input" required value={form.orgName} onChange={f('orgName')} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Industry</label>
-                <select className="form-select" value={form.industry} onChange={f('industry')}>
-                  <option value="">Select industry</option>
-                  {['Technology','Finance','Healthcare','Manufacturing','Telecommunications','Consulting','Education','General'].map(i => <option key={i} value={i}>{i}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label style={{display:'flex', gap:10, alignItems:'flex-start', cursor:'pointer', fontSize:13, color:'var(--gray-600)'}}>
-                  <input type="checkbox" checked={form.gdprConsent} onChange={f('gdprConsent')} required style={{marginTop:2}} aria-required="true" />
-                  <span>I consent to CRI Platform processing my data as described in the <a href="#/privacy" style={{color:'var(--blue)'}}>Privacy Policy</a>. Data is processed under GDPR, POPIA, and Nigeria's NDPA 2023.</span>
-                </label>
-              </div>
-              <button type="submit" className="btn btn-primary btn-lg" style={{width:'100%', justifyContent:'center'}} disabled={loading}>
-                {loading ? <><span className="spinner" style={{width:16,height:16}}/> Creating account…</> : 'Create account'}
-              </button>
-            </form>
-          </div>
-        </div>
-        <p style={{textAlign:'center', marginTop:20, fontSize:14, color:'var(--gray-600)'}}>
-          Already have an account? <a href="#/login" style={{color:'var(--blue)', fontWeight:500}}>Sign in</a>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ── Sidebar Navigation ─────────────────────────────────────────
-function Sidebar({ path, navigate, user }) {
-  const { logout } = useAuth();
-  const isActive = (p) => path.startsWith(p) ? 'nav-item active' : 'nav-item';
-
-  return (
-    <aside className="sidebar" role="navigation" aria-label="Main navigation">
-      <div className="sidebar-brand">
-        <h1>🌍 CRI Platform</h1>
-        <p>Cultural Readiness Index</p>
-      </div>
-      <nav className="sidebar-nav">
-        <div className="nav-section">
-          <div className="nav-section-label">Overview</div>
-          <div className={isActive('/dashboard')} onClick={() => navigate('/dashboard')}>
-            <span className="nav-icon" aria-hidden="true">📊</span> Dashboard
-          </div>
-        </div>
-        <div className="nav-section">
-          <div className="nav-section-label">Assessments</div>
-          <div className={isActive('/assessments')} onClick={() => navigate('/assessments')}>
-            <span className="nav-icon" aria-hidden="true">📋</span> All Assessments
-          </div>
-          <div className="nav-item" onClick={() => navigate('/assessments/new')}>
-            <span className="nav-icon" aria-hidden="true">➕</span> New Assessment
-          </div>
-        </div>
-        <div className="nav-section">
-          <div className="nav-section-label">Reports</div>
-          <div className={isActive('/reports')} onClick={() => navigate('/reports')}>
-            <span className="nav-icon" aria-hidden="true">📄</span> Reports
-          </div>
-        </div>
-        {user?.role === 'superadmin' && (
-          <div className="nav-section">
-            <div className="nav-section-label">Admin</div>
-            <div className={isActive('/admin')} onClick={() => navigate('/admin')}>
-              <span className="nav-icon" aria-hidden="true">⚙️</span> Admin Panel
-            </div>
-          </div>
-        )}
-        <div className="nav-section">
-          <div className="nav-section-label">Account</div>
-          <div className="nav-item" onClick={() => navigate('/settings')}>
-            <span className="nav-icon" aria-hidden="true">🔧</span> Settings
-          </div>
-          <div className="nav-item" onClick={logout}>
-            <span className="nav-icon" aria-hidden="true">🚪</span> Sign out
-          </div>
-        </div>
-      </nav>
-      <div className="sidebar-footer">
-        <div style={{fontWeight:500, color:'rgba(255,255,255,0.8)', marginBottom:2}}>{user?.first_name} {user?.last_name}</div>
-        <div>{user?.org_name}</div>
-        <div style={{marginTop:4}}>
-          <span className="badge" style={{background:'rgba(255,193,7,0.2)', color:'#ffc107', fontSize:11}}>{user?.plan?.toUpperCase() || 'TRIAL'}</span>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-// ── Radar Chart ────────────────────────────────────────────────
-function RadarChart({ teamScores, benchmarks, labels }) {
-  const canvasRef = useRef(null);
-  const chartRef = useRef(null);
-
-  useEffect(() => {
-    if (!canvasRef.current || !teamScores) return;
-    if (chartRef.current) chartRef.current.destroy();
-
-    const dims = Object.keys(teamScores);
-    const chartLabels = dims.map(d => labels[d] || d);
-    const teamData = dims.map(d => teamScores[d] || 0);
-    const benchmarkData = benchmarks ? dims.map(d => benchmarks[d] || 0) : null;
-
-    chartRef.current = new Chart(canvasRef.current, {
-      type: 'radar',
-      data: {
-        labels: chartLabels,
-        datasets: [
-          {
-            label: 'Team Score',
-            data: teamData,
-            fill: true,
-            backgroundColor: 'rgba(0, 85, 164, 0.15)',
-            borderColor: 'rgb(0, 85, 164)',
-            pointBackgroundColor: 'rgb(0, 85, 164)',
-            pointBorderColor: '#fff',
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: 'rgb(0, 85, 164)',
-            borderWidth: 2,
-          },
-          ...(benchmarkData ? [{
-            label: 'Country Benchmark',
-            data: benchmarkData,
-            fill: true,
-            backgroundColor: 'rgba(200, 150, 12, 0.1)',
-            borderColor: 'rgba(200, 150, 12, 0.8)',
-            pointBackgroundColor: 'rgba(200, 150, 12, 0.8)',
-            pointBorderColor: '#fff',
-            borderWidth: 2,
-            borderDash: [5, 5],
-          }] : []),
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          r: {
-            min: 0, max: 100,
-            ticks: { stepSize: 20, font: { size: 10 } },
-            pointLabels: { font: { size: 11 } },
-            grid: { color: 'rgba(0,0,0,0.06)' },
-          },
-        },
-        plugins: {
-          legend: { position: 'top', labels: { font: { size: 12 }, padding: 16 } },
-          tooltip: {
-            callbacks: {
-              label: ctx => `${ctx.dataset.label}: ${ctx.parsed.r?.toFixed(1)}`,
-            },
-          },
-        },
-      },
-    });
-    return () => { if (chartRef.current) chartRef.current.destroy(); };
-  }, [teamScores, benchmarks]);
-
-  return <canvas ref={canvasRef} aria-label="Cultural dimensions radar chart" role="img" />;
-}
-
-// ── Dashboard ──────────────────────────────────────────────────
-function Dashboard({ navigate }) {
-  const { user } = useAuth();
-  const [assessments, setAssessments] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    apiFetch('/assessments')
-      .then(setAssessments)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  const completed = assessments.filter(a => a.status === 'completed').length;
-  const active = assessments.filter(a => a.status === 'active').length;
-  const totalResponses = assessments.reduce((s, a) => s + (a.response_count || 0), 0);
-
-  if (loading) return <div className="loading-page"><span className="spinner spinner-dark" /> Loading dashboard…</div>;
-
-  return (
-    <div className="content">
-      <div className="page-header">
-        <div>
-          <div className="page-title">Welcome back, {user?.first_name} 👋</div>
-          <div className="page-subtitle">{user?.org_name}</div>
-        </div>
-        <button className="btn btn-primary" onClick={() => navigate('/assessments/new')}>+ New Assessment</button>
-      </div>
-
-      <div className="stats-grid">
-        <div className="stat-card"><div className="stat-value">{assessments.length}</div><div className="stat-label">Total Assessments</div></div>
-        <div className="stat-card"><div className="stat-value" style={{color:'var(--green)'}}>{completed}</div><div className="stat-label">Completed</div></div>
-        <div className="stat-card"><div className="stat-value" style={{color:'var(--amber)'}}>{active}</div><div className="stat-label">Active Surveys</div></div>
-        <div className="stat-card"><div className="stat-value">{totalResponses}</div><div className="stat-label">Total Responses</div></div>
-      </div>
-
-      <div className="card">
-        <div className="card-header" style={{display:'flex', justifyContent:'space-between', alignItems:'center', paddingBottom:16, borderBottom:'1px solid var(--gray-200)'}}>
-          <div><div className="card-title">Recent Assessments</div></div>
-          <button className="btn btn-secondary btn-sm" onClick={() => navigate('/assessments')}>View all</button>
-        </div>
-        <div className="table-wrapper">
-          {assessments.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📋</div>
-              <div className="empty-title">No assessments yet</div>
-              <div className="empty-desc">Create your first assessment to start measuring cultural readiness.</div>
-              <button className="btn btn-primary" onClick={() => navigate('/assessments/new')}>Create Assessment</button>
-            </div>
-          ) : (
-            <table>
-              <thead><tr>
-                <th>Assessment</th><th>Country</th><th>Responses</th><th>Overall Score</th><th>Status</th><th></th>
-              </tr></thead>
-              <tbody>
-                {assessments.slice(0, 5).map(a => (
-                  <tr key={a.id}>
-                    <td style={{fontWeight:500}}>{a.name}</td>
-                    <td>{a.target_country}</td>
-                    <td>{a.response_count}</td>
-                    <td>
-                      {a.overall_score != null ? (
-                        <div className="score-bar-wrap">
-                          <div className="score-bar-track">
-                            <div className={`score-bar-fill ${a.colour_band || 'blue'}`} style={{width:`${a.overall_score}%`}} />
-                          </div>
-                          <span className="score-num">{Number(a.overall_score).toFixed(1)}</span>
-                        </div>
-                      ) : <span style={{color:'var(--gray-400)'}}>—</span>}
-                    </td>
-                    <td>
-                      <span className={`badge badge-${a.status === 'completed' ? 'green' : a.status === 'active' ? 'amber' : 'gray'}`}>
-                        {a.status}
-                      </span>
-                    </td>
-                    <td><button className="btn btn-secondary btn-sm" onClick={() => navigate(`/assessments/${a.id}`)}>View</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Assessment Detail ──────────────────────────────────────────
-const DIMENSION_LABELS = {
-  power_distance: 'Hierarchy & Authority',
-  individualism_collectivism: 'Team & Community',
-  masculinity_femininity: 'Achievement Drive',
-  uncertainty_avoidance: 'Rules & Risk',
-  long_term_orientation: 'Time Perception',
-  indulgence_restraint: 'Work-Life Integration',
-  communication_style: 'Communication Style',
-};
-
-function AssessmentDetail({ id, navigate }) {
-  const [assessment, setAssessment] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('overview');
-  const [inviteEmails, setInviteEmails] = useState('');
-  const [inviteStatus, setInviteStatus] = useState('');
-  const [computing, setComputing] = useState(false);
-
-  useEffect(() => {
-    apiFetch(`/assessments/${id}`).then(setAssessment).finally(() => setLoading(false));
-  }, [id]);
-
-  const copyLink = () => {
-    const url = `${window.location.origin}${window.location.pathname}#/survey/${assessment.survey_token}`;
-    navigator.clipboard?.writeText(url);
-    alert('Survey link copied!');
   };
 
   const sendInvites = async () => {
