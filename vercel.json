@@ -1,0 +1,9 @@
+{
+  "outputDirectory": "frontend",
+  "buildCommand": "",
+  "installCommand": "",
+  "framework": null,
+  "routes": [
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}
