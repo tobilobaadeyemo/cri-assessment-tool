@@ -240,3 +240,27 @@ CREATE TRIGGER trg_organizations_updated_at BEFORE UPDATE ON organizations FOR E
 CREATE TRIGGER trg_assessments_updated_at  BEFORE UPDATE ON assessments  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_payments_updated_at     BEFORE UPDATE ON payments     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER trg_reports_updated_at      BEFORE UPDATE ON reports      FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ============================================================
+-- FIX: Password reset tokens table (missing from original)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  user_id     UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  token       VARCHAR(128) NOT NULL UNIQUE,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  used        BOOLEAN NOT NULL DEFAULT false,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================
+-- FIX: Missing index on email_log for reminder queue
+-- ============================================================
+CREATE INDEX IF NOT EXISTS idx_email_log_type_created ON email_log(type, created_at);
+CREATE INDEX IF NOT EXISTS idx_responses_assessment_complete ON responses(assessment_id, is_complete);
+CREATE INDEX IF NOT EXISTS idx_assessments_org_status ON assessments(organization_id, status);
+
+-- ============================================================
+-- FIX: communication_style benchmark was NULL for all countries.
+-- Add a default value so radar charts render correctly.
+-- ============================================================
+UPDATE benchmarks SET communication_style = 65 WHERE communication_style IS NULL;

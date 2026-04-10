@@ -9,18 +9,13 @@ export const surveyRouter = Router();
 // ── Get survey by token (public) ───────────────────────────────
 surveyRouter.get('/:token', async (req, res) => {
   try {
-    const token = req.params!.token;
-    if (!token) {
-      return res.status(400).json({ error: 'Missing survey token' });
-    }
-
     const result = await query(
       `SELECT a.id, a.name, a.description, a.target_country, a.target_industry,
               a.status, o.name as org_name
        FROM assessments a
        JOIN organizations o ON o.id = a.organization_id
        WHERE a.survey_token = $1 AND a.status = 'active'`,
-      [token]
+      [req.params.token]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Survey not found or no longer active' });
@@ -39,10 +34,7 @@ surveyRouter.get('/:token', async (req, res) => {
       assessment: result.rows[0],
       questions: questionsResult.rows,
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to load survey' });
-  }
+  } catch { res.status(500).json({ error: 'Failed to load survey' }); }
 });
 
 // ── Submit survey response (public, anonymous) ─────────────────
@@ -53,17 +45,13 @@ surveyRouter.post('/:token/submit',
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     const { answers } = req.body;
-    const token = req.params!.token;
-    if (!token) {
-      return res.status(400).json({ error: 'Missing survey token' });
-    }
 
     try {
       const assessmentResult = await query(
         `SELECT id, min_responses, target_country, target_industry, organization_id
          FROM assessments
          WHERE survey_token = $1 AND status = 'active'`,
-        [token]
+        [req.params.token]
       );
       if (assessmentResult.rows.length === 0) {
         return res.status(404).json({ error: 'Survey not found or not active' });
@@ -106,7 +94,6 @@ surveyRouter.post('/:token/submit',
         try {
           await autoComputeAndNotify(assessment);
         } catch (e) {
-          console.error('Auto-compute failed:', e);
           // Non-fatal — scores can be computed manually
         }
       }
@@ -116,10 +103,7 @@ surveyRouter.post('/:token/submit',
         responseCount: newCount,
         minRequired: assessment.min_responses,
       });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Failed to submit response' });
-    }
+    } catch { res.status(500).json({ error: 'Failed to submit response' }); }
   }
 );
 

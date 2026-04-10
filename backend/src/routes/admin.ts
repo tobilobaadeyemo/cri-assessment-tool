@@ -70,3 +70,18 @@ adminRouter.get('/export', async (_req, res) => {
     res.send([headers, ...rows].join('\n'));
   } catch { res.status(500).json({ error: 'Export failed' }); }
 });
+
+// FIX: Promote user to superadmin via API (no more raw SQL)
+adminRouter.post('/promote', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'email required' });
+  try {
+    const result = await query(
+      `UPDATE users SET role = 'superadmin', updated_at = NOW()
+       WHERE email = $1 AND is_active = true RETURNING id, email, role`,
+      [email]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found or inactive' });
+    res.json({ message: `${email} promoted to superadmin`, user: result.rows[0] });
+  } catch { res.status(500).json({ error: 'Failed to promote user' }); }
+});

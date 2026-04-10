@@ -1,0 +1,77 @@
+# render.yaml — Render.com deployment configuration
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  # ── Backend API ──────────────────────────────────────────────
+  - type: web
+    name: cri-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cri-postgres
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: INTERNAL_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: https://cri-assessment-tool.vercel.app
+      - key: FRONTEND_URL
+        value: https://cri-assessment-tool.vercel.app
+      # Add these manually in Render dashboard (sensitive):
+      # STRIPE_API_KEY, STRIPE_WEBHOOK_SIGNING_SECRET
+      # STRIPE_PRICE_STARTER, STRIPE_PRICE_ENTERPRISE
+      # LLM_PROVIDER_API_KEY
+      # MAIL_HOST, MAIL_PORT, MAIL_USER, MAIL_PASS, MAIL_FROM
+    healthCheckPath: /health
+
+  # ── MCP Scoring Server ───────────────────────────────────────
+  - type: web
+    name: cri-mcp-server
+    runtime: docker
+    dockerfilePath: ./mcp-server/Dockerfile
+    dockerContext: ./mcp-server
+    plan: free
+    envVars:
+      - key: MCP_PORT
+        value: 3001
+    healthCheckPath: /health
+
+  # ── Hourly reminder cron ─────────────────────────────────────
+  - type: cron
+    name: cri-reminders
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    schedule: "0 * * * *"   # every hour
+    command: >
+      node -e "
+        const https = require('https');
+        const opts = {
+          hostname: 'cri-backend.onrender.com',
+          path: '/api/internal/process-reminders',
+          method: 'POST',
+          headers: { 'x-internal-secret': process.env.INTERNAL_SECRET, 'Content-Length': 0 }
+        };
+        https.request(opts, r => console.log('Reminders processed:', r.statusCode)).end();
+      "
+    envVars:
+      - key: INTERNAL_SECRET
+        fromService:
+          name: cri-backend
+          type: web
+          property: INTERNAL_SECRET
+
+databases:
+  - name: cri-postgres
+    plan: free
+    databaseName: cri_db
+    user: cri_user

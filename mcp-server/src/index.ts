@@ -207,3 +207,28 @@ app.listen(PORT, () => {
 });
 
 export { computeScore };
+
+// ── FIX: POST /score/validate ───────────────────────────────────
+// Validates answers before submission — returns missing/unknown/invalid question IDs
+app.post('/score/validate', (req, res) => {
+  try {
+    const { answers } = req.body;
+    if (!answers || typeof answers !== 'object') {
+      return res.status(400).json({ error: 'answers object required' });
+    }
+    const allQuestionIds = Object.keys(QUESTION_SCORING);
+    const provided = Object.keys(answers);
+
+    const missing = allQuestionIds.filter(id => !(id in answers));
+    const unknown = provided.filter(id => !QUESTION_SCORING[id]);
+    const invalid = provided.filter(id => {
+      const v = answers[id];
+      return typeof v !== 'number' || !Number.isInteger(v) || v < 1 || v > 5;
+    });
+
+    const valid = missing.length === 0 && unknown.length === 0 && invalid.length === 0;
+    res.json({ valid, missing, unknown, invalid, total: allQuestionIds.length, provided: provided.length });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});

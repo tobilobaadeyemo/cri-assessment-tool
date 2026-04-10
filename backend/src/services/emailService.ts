@@ -4,7 +4,7 @@ import { logger } from '../lib/logger';
 
 interface EmailOptions {
   to: string;
-  type: 'welcome' | 'invite' | 'reminder' | 'report_ready' | 'payment_confirmation' | 'abandoned_cart';
+  type: 'welcome' | 'invite' | 'reminder' | 'report_ready' | 'payment_confirmation' | 'abandoned_cart' | 'password_reset';
   assessmentId?: string;
   organizationId?: string;
   data?: Record<string, any>;
@@ -175,6 +175,32 @@ function getEmailContent(type: EmailOptions['type'], data: Record<string, any>) 
               <p style="color:#666;font-size:12px">If you'd like to unsubscribe from these reminders, 
                 <a href="${process.env.FRONTEND_URL}/unsubscribe?email=${encodeURIComponent(data.email)}">click here</a>.
               </p>
+            </div>
+          </div>`,
+      };
+
+
+    case 'password_reset':
+      return {
+        from,
+        subject: `Reset your CRI Platform password`,
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+            <div style="background:#003366;color:white;padding:24px;text-align:center">
+              <h1 style="margin:0;font-size:24px">Cultural Readiness Index</h1>
+            </div>
+            <div style="padding:32px">
+              <h2>Password Reset Request</h2>
+              <p>Hi ${data.firstName},</p>
+              <p>We received a request to reset your CRI Platform password. Click the button below to set a new password. This link expires in <strong>1 hour</strong>.</p>
+              <div style="text-align:center;margin:32px 0">
+                <a href="${data.resetUrl}"
+                   style="background:#0055a4;color:white;padding:14px 28px;text-decoration:none;border-radius:4px;font-size:16px">
+                  Reset Password
+                </a>
+              </div>
+              <p style="color:#666;font-size:14px">If you did not request this, you can safely ignore this email. Your password will not change.</p>
+              <p style="color:#666;font-size:12px">Link not working? Copy and paste: ${data.resetUrl}</p>
             </div>
           </div>`,
       };
