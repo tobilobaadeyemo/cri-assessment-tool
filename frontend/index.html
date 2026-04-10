@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cultural Readiness Index — CRI Platform</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #003366;
+    --blue: #0055a4;
+    --blue-light: #e8f0fa;
+    --gold: #c8960c;
+    --gold-light: #fef9e8;
+    --green: #15803d;
+    --green-bg: #f0fdf4;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-400: #94a3b8;
+    --gray-600: #475569;
+    --gray-800: #1e293b;
+    --sidebar-w: 240px;
+    --radius: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  }
+
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--gray-800); background: var(--gray-50); min-height: 100vh; }
+
+  /* Layout */
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar { width: var(--sidebar-w); background: var(--navy); color: white; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 50; }
+  .main { margin-left: var(--sidebar-w); flex: 1; }
+  .content { padding: 32px; max-width: 1200px; }
+  .topbar { background: white; border-bottom: 1px solid var(--gray-200); padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; box-shadow: var(--shadow); }
+
+  /* Sidebar */
+  .sidebar-brand { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .sidebar-brand h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.5px; line-height: 1.3; }
+  .sidebar-brand p { font-size: 11px; opacity: 0.6; margin-top: 2px; }
+  .sidebar-nav { flex: 1; padding: 16px 0; overflow-y: auto; }
+  .nav-section { margin-bottom: 24px; }
+  .nav-section-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; opacity: 0.5; padding: 0 16px 8px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; font-size: 14px; color: rgba(255,255,255,0.8); cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; text-decoration: none; }
+  .nav-item:hover { background: rgba(255,255,255,0.07); color: white; }
+  .nav-item.active { background: rgba(255,255,255,0.12); color: white; border-left-color: #ffc107; }
+  .nav-icon { font-size: 16px; flex-shrink: 0; }
+  .sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 12px; opacity: 0.6; }
+
+  /* Cards */
+  .card { background: white; border-radius: var(--radius); border: 1px solid var(--gray-200); box-shadow: var(--shadow); }
+  .card-header { padding: 20px 24px 0; }
+  .card-body { padding: 20px 24px; }
+  .card-title { font-size: 16px; font-weight: 600; color: var(--gray-800); }
+  .card-subtitle { font-size: 13px; color: var(--gray-600); margin-top: 2px; }
+
+  /* Stats grid */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat-card { background: white; border-radius: var(--radius); border: 1px solid var(--gray-200); padding: 20px; box-shadow: var(--shadow); }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--navy); }
+  .stat-label { font-size: 13px; color: var(--gray-600); margin-top: 4px; }
+  .stat-delta { font-size: 12px; margin-top: 4px; }
+  .stat-delta.up { color: var(--green); }
+  .stat-delta.down { color: var(--red); }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; text-decoration: none; }
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-primary:hover { background: var(--navy); }
+  .btn-secondary { background: white; color: var(--gray-800); border: 1px solid var(--gray-200); }
+  .btn-secondary:hover { background: var(--gray-100); }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-sm { padding: 5px 12px; font-size: 13px; }
+  .btn-lg { padding: 12px 24px; font-size: 15px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Forms */
+  .form-group { margin-bottom: 18px; }
+  .form-label { display: block; font-size: 13px; font-weight: 500; color: var(--gray-600); margin-bottom: 6px; }
+  .form-input { width: 100%; padding: 9px 12px; border: 1px solid var(--gray-200); border-radius: var(--radius); font-size: 14px; color: var(--gray-800); background: white; transition: border-color 0.15s; }
+  .form-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,85,164,0.1); }
+  .form-select { width: 100%; padding: 9px 12px; border: 1px solid var(--gray-200); border-radius: var(--radius); font-size: 14px; background: white; }
+  .form-error { font-size: 12px; color: var(--red); margin-top: 4px; }
+  .form-hint { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
+
+
+  /* Loading Skeletons */
+  @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+  .skeleton { background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%);
+    background-size: 400px 100%; animation: shimmer 1.4s ease infinite; border-radius: var(--radius); }
+  .skeleton-text { height: 14px; margin-bottom: 8px; border-radius: 4px; }
+  .skeleton-title { height: 20px; width: 60%; margin-bottom: 12px; border-radius: 4px; }
+  .skeleton-stat { height: 80px; border-radius: var(--radius); }
+  .skeleton-row { height: 44px; margin-bottom: 4px; border-radius: 4px; }
+
+  /* Tables */
+  .table-wrapper { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead th { background: var(--gray-50); padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); }
+  tbody td { padding: 12px 14px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--gray-50); }
+
+  /* Badges */
+  .badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; }
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+  .badge-blue { background: var(--blue-light); color: var(--blue); }
+  .badge-gray { background: var(--gray-100); color: var(--gray-600); }
+
+  /* Score bars */
+  .score-bar-wrap { display: flex; align-items: center; gap: 10px; }
+  .score-bar-track { flex: 1; height: 8px; background: var(--gray-200); border-radius: 4px; overflow: hidden; position: relative; }
+  .score-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+  .score-bar-fill.green { background: var(--green); }
+  .score-bar-fill.amber { background: var(--amber); }
+  .score-bar-fill.red { background: var(--red); }
+  .score-bar-fill.blue { background: var(--blue); }
+  .score-num { font-size: 13px; font-weight: 600; min-width: 36px; text-align: right; }
+
+  /* Alerts */
+  .alert { padding: 12px 16px; border-radius: var(--radius); font-size: 14px; margin-bottom: 16px; }
+
+  .alert-success { background: var(--green-bg); color: var(--green); border: 1px solid #86efac; border-radius: var(--radius); padding: 10px 14px; font-size: 13px; margin-bottom: 16px; }
+  .alert-error { background: var(--red-bg); color: var(--red); border: 1px solid #fecaca; }
+  .alert-success { background: var(--green-bg); color: var(--green); border: 1px solid #bbf7d0; }
+  .alert-info { background: var(--blue-light); color: var(--blue); border: 1px solid #bfdbfe; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal { background: white; border-radius: 8px; width: 100%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center; }
+  .modal-title { font-size: 17px; font-weight: 600; }
+  .modal-body { padding: 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--gray-200); display: flex; gap: 10px; justify-content: flex-end; }
+  .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--gray-400); padding: 0 4px; }
+
+  /* Survey specific */
+  .survey-wrap { max-width: 720px; margin: 0 auto; padding: 32px 20px; }
+  .survey-header { text-align: center; margin-bottom: 40px; }
+  .survey-progress { background: var(--gray-200); height: 4px; border-radius: 2px; margin-bottom: 8px; }
+  .survey-progress-fill { background: var(--blue); height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+  .survey-step { font-size: 13px; color: var(--gray-600); text-align: right; margin-bottom: 24px; }
+  .dimension-card { background: white; border: 1px solid var(--gray-200); border-radius: 8px; padding: 28px; margin-bottom: 32px; box-shadow: var(--shadow); }
+  .dimension-name { font-size: 18px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+  .dimension-desc { font-size: 14px; color: var(--gray-600); margin-bottom: 24px; }
+  .question-item { margin-bottom: 28px; padding-bottom: 24px; border-bottom: 1px solid var(--gray-100); }
+  .question-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .question-text { font-size: 15px; margin-bottom: 14px; line-height: 1.5; }
+  .likert-scale { display: flex; gap: 8px; }
+  .likert-option { flex: 1; }
+  .likert-option input { display: none; }
+  .likert-option label { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border: 2px solid var(--gray-200); border-radius: var(--radius); cursor: pointer; transition: all 0.15s; font-size: 12px; color: var(--gray-600); text-align: center; }
+  .likert-option label:hover { border-color: var(--blue); background: var(--blue-light); }
+  .likert-option input:checked + label { border-color: var(--blue); background: var(--blue); color: white; }
+  .likert-num { font-size: 18px; font-weight: 700; }
+  .likert-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--gray-400); margin-top: 6px; }
+
+  /* Landing */
+  .landing { min-height: 100vh; background: white; }
+  .landing-hero { background: linear-gradient(135deg, var(--navy) 0%, #0a4a8c 100%); color: white; padding: 80px 24px; text-align: center; }
+  .landing-hero h1 { font-size: clamp(28px, 5vw, 52px); font-weight: 800; margin-bottom: 20px; line-height: 1.2; }
+  .landing-hero p { font-size: 18px; opacity: 0.85; max-width: 600px; margin: 0 auto 40px; }
+  .hero-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; max-width: 900px; margin: 0 auto; padding: 60px 24px; }
+  .pricing-card { border: 2px solid var(--gray-200); border-radius: 10px; padding: 32px; position: relative; }
+  .pricing-card.featured { border-color: var(--blue); }
+  .pricing-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--blue); color: white; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .pricing-name { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  .pricing-price { font-size: 36px; font-weight: 800; color: var(--navy); }
+  .pricing-desc { font-size: 14px; color: var(--gray-600); margin: 12px 0 24px; }
+  .pricing-features { list-style: none; }
+  .pricing-features li { padding: 8px 0; border-top: 1px solid var(--gray-100); font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .pricing-features li::before { content: '✓'; color: var(--green); font-weight: 700; }
+
+  /* Dashboard specific */
+  .page-title { font-size: 22px; font-weight: 700; color: var(--navy); }
+  .page-subtitle { font-size: 14px; color: var(--gray-600); margin-top: 2px; }
+  .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } .sidebar { transform: translateX(-100%); } .main { margin-left: 0; } }
+
+  /* GDPR cookie banner */
+  .cookie-banner { position: fixed; bottom: 0; left: 0; right: 0; background: var(--navy); color: white; padding: 16px 24px; z-index: 1000; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .cookie-banner p { font-size: 13px; opacity: 0.9; flex: 1; min-width: 200px; }
+  .cookie-actions { display: flex; gap: 10px; flex-shrink: 0; }
+
+  /* Radar chart */
+  .chart-container { position: relative; height: 340px; }
+
+  /* Loaders */
+  .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .spinner-dark { border-color: rgba(0,0,0,0.1); border-top-color: var(--blue); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-page { display: flex; align-items: center; justify-content: center; height: 100%; min-height: 300px; gap: 12px; color: var(--gray-600); }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--gray-400); }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-title { font-size: 18px; font-weight: 600; color: var(--gray-600); margin-bottom: 8px; }
+  .empty-desc { font-size: 14px; margin-bottom: 24px; }
+
+  /* Dividers */
+  .divider { border: none; border-top: 1px solid var(--gray-200); margin: 20px 0; }
+  .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--gray-400); margin-bottom: 12px; }
+
+  /* Tabs */
+  .tabs { display: flex; border-bottom: 1px solid var(--gray-200); margin-bottom: 24px; }
+  .tab { padding: 10px 20px; font-size: 14px; color: var(--gray-600); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 500; }
+  .tab:hover:not(.active) { color: var(--gray-800); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef, createContext, useContext } = React;
+
+// ── API Client ─────────────────────────────────────────────────
+const API_BASE = window.location.hostname === 'localhost'
+  ? 'http://localhost:8080/api'
+  : 'https://cri-backend.onrender.com/api';
+
+async function apiFetch(path, opts = {}) {
+  const token = localStorage.getItem('cri_token');
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(opts.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || 'Request failed');
+  }
+  return res.json();
+}
+
+// ── Auth Context ───────────────────────────────────────────────
+const AuthContext = createContext(null);
+
+function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('cri_token');
+    if (token) {
+      apiFetch('/auth/me')
+        .then(u => setUser(u))
+        .catch(() => localStorage.removeItem('cri_token'))
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const login = async (email, password) => {
+    const data = await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    localStorage.setItem('cri_token', data.token);
+    setUser(data.user);
+    return data.user;
+  };
+
+  const logout = () => {
+    localStorage.removeItem('cri_token');
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+function useAuth() { return useContext(AuthContext); }
+
+// ── Router ─────────────────────────────────────────────────────
+function useRoute() {
+  const [path, setPath] = useState(window.location.hash.slice(1) || '/');
+  useEffect(() => {
+    const handler = () => setPath(window.location.hash.slice(1) || '/');
+    window.addEventListener('hashchange', handler);
+    return () => window.removeEventListener('hashchange', handler);
+  }, []);
+  const navigate = (to) => { window.location.hash = to; };
+  return { path, navigate };
+}
+
+// ── Cookie Banner (GDPR/POPIA/NDPA) ───────────────────────────
+function CookieBanner() {
+  const [accepted, setAccepted] = useState(localStorage.getItem('cri_cookies') === 'accepted');
+  if (accepted) return null;
+  const accept = () => { localStorage.setItem('cri_cookies', 'accepted'); setAccepted(true); };
+  const decline = () => { localStorage.setItem('cri_cookies', 'declined'); setAccepted(true); };
+  return (
+    <div className="cookie-banner" role="alert" aria-live="polite">
+      <p>
+        We use cookies to provide our service and improve your experience. By using CRI Platform,
+        you agree to our <a href="#/privacy" style={{color:'#ffc107'}}>Privacy Policy</a> and data
+        processing under GDPR, POPIA, and Nigeria's NDPA 2023.
+      </p>
+      <div className="cookie-actions">
+        <button className="btn btn-secondary btn-sm" onClick={decline} aria-label="Decline cookies">Decline</button>
+        <button className="btn btn-primary btn-sm" onClick={accept} aria-label="Accept cookies">Accept All</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Landing Page ───────────────────────────────────────────────
+function LandingPage({ navigate }) {
+  return (
+    <div className="landing">
+      <nav style={{background:' #003366', padding:'14px 32px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+        <div style={{color:'white', fontWeight:700, fontSize:18}}>🌍 CRI Platform</div>
+        <div style={{display:'flex', gap:12}}>
+          <button className="btn btn-secondary btn-sm" onClick={() => navigate('/login')}>Log in</button>
+          <button className="btn btn-primary btn-sm" style={{background:'#ffc107', color:'#003366', fontWeight:600}} onClick={() => navigate('/register')}>Start Free Trial</button>
+        </div>
+      </nav>
+
+      <div className="landing-hero">
+        <h1>Measure Your Team's Cultural Readiness for African Markets</h1>
+        <p>The Cultural Readiness Index (CRI) helps organisations understand, benchmark, and improve cross-cultural effectiveness — with AI-powered recommendations.</p>
+        <div className="hero-btns">
+          <button className="btn btn-lg" style={{background:'#ffc107', color:'#003366', fontWeight:700}} onClick={() => navigate('/register')}>
+            Start Free Trial →
+          </button>
+          <button className="btn btn-lg btn-secondary" onClick={() => navigate('/survey/demo')}>
+            See a Demo Survey
+          </button>
+        </div>
+      </div>
+
+      {/* Features */}
+      <div style={{padding:'60px 24px', maxWidth:1000, margin:'0 auto'}}>
+        <h2 style={{textAlign:'center', fontSize:28, fontWeight:700, color:'var(--navy)', marginBottom:40}}>
+          Built for companies expanding into Africa
+        </h2>
+        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:24}}>
+          {[
+            { icon:'📊', title:'7-Dimension Model', desc:'Based on Hofstede\'s 6-D framework + Communication Style, validated for African workplace contexts.' },
+            { icon:'🤖', title:'AI Recommendations', desc:'Enterprise plans include Claude-powered insights from Dr. Anya Sharma, expert cultural consultant.' },
+            { icon:'📈', title:'Industry Benchmarks', desc:'Compare your team to Nigeria, Ghana, Kenya, South Africa, Egypt, and Ethiopia benchmarks by industry.' },
+            { icon:'📄', title:'Downloadable Reports', desc:'Professional PDF reports with radar charts, risk heatmaps, and actionable development plans.' },
+            { icon:'🔒', title:'GDPR/POPIA/NDPA Compliant', desc:'Anonymous survey responses. Full data subject rights. Standard Contractual Clauses for transfers.' },
+            { icon:'⚡', title:'10-Minute Survey', desc:'Minimal burden on your team. Mobile-friendly. No login required for respondents.' },
+          ].map(f => (
+            <div key={f.title} style={{background:'white', border:'1px solid var(--gray-200)', borderRadius:8, padding:24}}>
+              <div style={{fontSize:32, marginBottom:12}}>{f.icon}</div>
+              <div style={{fontWeight:600, marginBottom:6, color:'var(--navy)'}}>{f.title}</div>
+              <div style={{fontSize:14, color:'var(--gray-600)', lineHeight:1.5}}>{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Pricing */}
+      <div style={{background:'var(--gray-50)', padding:'20px 0'}}>
+        <h2 style={{textAlign:'center', fontSize:28, fontWeight:700, color:'var(--navy)', marginBottom:8}}>Simple, Transparent Pricing</h2>
+        <p style={{textAlign:'center', color:'var(--gray-600)', marginBottom:0}}>Pay per report. No monthly subscription required.</p>
+        <div className="pricing-grid">
+          <div className="pricing-card">
+            <div className="pricing-name">Starter</div>
+            <div className="pricing-price">$299</div>
+            <div className="pricing-desc">Per assessment report. Ideal for teams up to 50 people.</div>
+            <ul className="pricing-features">
+              <li>1 country, 1 industry</li>
+              <li>Up to 50 respondents</li>
+              <li>Full dimension scores</li>
+              <li>Benchmark comparison</li>
+              <li>HTML report download</li>
+              <li>Email invitations</li>
+              <li>GDPR/POPIA compliant</li>
+            </ul>
+            <button className="btn btn-primary" style={{width:'100%', marginTop:24, justifyContent:'center'}} onClick={() => navigate('/register')}>Get Started</button>
+          </div>
+          <div className="pricing-card featured">
+            <div className="pricing-badge">Most Popular</div>
+            <div className="pricing-name">Enterprise</div>
+            <div className="pricing-price">$2,500</div>
+            <div className="pricing-desc">Full-featured report with AI recommendations. Unlimited respondents.</div>
+            <ul className="pricing-features">
+              <li>All Starter features</li>
+              <li>Unlimited respondents</li>
+              <li>AI-powered recommendations</li>
+              <li>Risk heatmap analysis</li>
+              <li>Custom dimension weights</li>
+              <li>Priority support</li>
+              <li>SSO integration</li>
+              <li>90-day report access</li>
+            </ul>
+            <button className="btn btn-primary" style={{width:'100%', marginTop:24, justifyContent:'center', background:'var(--navy)'}} onClick={() => navigate('/register')}>Contact Sales</button>
+          </div>
+        </div>
+      </div>
+
+      <footer style={{background:'var(--navy)', color:'rgba(255,255,255,0.7)', padding:'32px 24px', textAlign:'center', fontSize:13}}>
+        <p>© {new Date().getFullYear()} CRI Solutions Inc. | <a href="#/privacy" style={{color:'rgba(255,255,255,0.6)'}}>Privacy Policy</a> | <a href="#/terms" style={{color:'rgba(255,255,255,0.6)'}}>Terms</a></p>
+        <p style={{marginTop:8}}>GDPR · POPIA · Nigeria NDPA 2023 Compliant</p>
+      </footer>
+    </div>
+  );
+}
+
+// ── Auth Forms ─────────────────────────────────────────────────
+function LoginPage({ navigate }) {
+  const { login } = useAuth();
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError(''); setLoading(true);
+    try {
+      await login(form.email, form.password);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message);
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div style={{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--gray-50)'}}>
+      <div style={{width:'100%', maxWidth:400, padding:'0 20px'}}>
+        <div style={{textAlign:'center', marginBottom:32}}>
+          <div style={{fontSize:32, marginBottom:8}}>🌍</div>
+          <h1 style={{fontSize:22, fontWeight:700, color:'var(--navy)'}}>Sign in to CRI Platform</h1>
+          <p style={{fontSize:14, color:'var(--gray-600)', marginTop:4}}>Cultural Readiness Index</p>
+        </div>
+        <div className="card">
+          <div className="card-body">
+            {error && <div className="alert alert-error">{error}</div>}
+            <form onSubmit={submit}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="email">Email address</label>
+                <input id="email" type="email" className="form-input" required autoFocus
+                  value={form.email} onChange={e => setForm(p => ({...p, email: e.target.value}))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="password">Password</label>
+                <input id="password" type="password" className="form-input" required
+                  value={form.password} onChange={e => setForm(p => ({...p, password: e.target.value}))} />
+              </div>
+              <button type="submit" className="btn btn-primary btn-lg" style={{width:'100%', justifyContent:'center'}} disabled={loading}>
+                {loading ? <><span className="spinner" style={{width:16,height:16}}/> Signing in…</> : 'Sign in'}
+              </button>
+            </form>
+          </div>
+        </div>
+        <p style={{textAlign:'center', marginTop:20, fontSize:14, color:'var(--gray-600)'}}>
+          Don't have an account? <a href="#/register" style={{color:'var(--blue)', fontWeight:500}}>Start free trial</a>
+        </p>
+        <p style={{textAlign:'center', marginTop:8, fontSize:14, color:'var(--gray-600)'}}>
+          <a href="#/forgot-password" style={{color:'var(--blue)'}}>Forgot password?</a>
+        </p>
+        <p style={{textAlign:'center', marginTop:8, fontSize:14, color:'var(--gray-600)'}}>
+          <a href="#/" style={{color:'var(--gray-400)'}}>← Back to home</a>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function RegisterPage({ navigate }) {
+  const { login } = useAuth();
+  const [form, setForm] = useState({ email:'', password:'', firstName:'', lastName:'', orgName:'', industry:'', gdprConsent:false });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!form.gdprConsent) { setError('You must consent to data processing to continue.'); return; }
+    setError(''); setLoading(true);
+    try {
+      const data = await apiFetch('/auth/register', { method:'POST', body: JSON.stringify({...form, gdprConsent: true}) });
+      localStorage.setItem('cri_token', data.token);
+      navigate('/dashboard');
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  };
+
+  const f = (k) => e => setForm(p => ({...p, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value}));
+
+  return (
+    <div style={{minHeight:'100vh', background:'var(--gray-50)', padding:'40px 20px'}}>
+      <div style={{maxWidth:480, margin:'0 auto'}}>
+        <div style={{textAlign:'center', marginBottom:32}}>
+          <h1 style={{fontSize:22, fontWeight:700, color:'var(--navy)'}}>Create your CRI account</h1>
+          <p style={{fontSize:14, color:'var(--gray-600)', marginTop:4}}>Start measuring cultural readiness today</p>
+        </div>
+        <div className="card">
+          <div className="card-body">
+            {error && <div className="alert alert-error">{error}</div>}
+            <form onSubmit={submit}>
+              <div className="two-col">
+                <div className="form-group">
+                  <label className="form-label">First name</label>
+                  <input type="text" className="form-input" required value={form.firstName} onChange={f('firstName')} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Last name</label>
+                  <input type="text" className="form-input" required value={form.lastName} onChange={f('lastName')} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Work email</label>
+                <input type="email" className="form-input" required value={form.email} onChange={f('email')} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Password</label>
+                <input type="password" className="form-input" required minLength={8} value={form.password} onChange={f('password')} />
+                <div className="form-hint">Minimum 8 characters</div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Organisation name</label>
+                <input type="text" className="form-input" required value={form.orgName} onChange={f('orgName')} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Industry</label>
+                <select className="form-select" value={form.industry} onChange={f('industry')}>
+                  <option value="">Select industry</option>
+                  {['Technology','Finance','Healthcare','Manufacturing','Telecommunications','Consulting','Education','General'].map(i => <option key={i} value={i}>{i}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label style={{display:'flex', gap:10, alignItems:'flex-start', cursor:'pointer', fontSize:13, color:'var(--gray-600)'}}>
+                  <input type="checkbox" checked={form.gdprConsent} onChange={f('gdprConsent')} required style={{marginTop:2}} aria-required="true" />
+                  <span>I consent to CRI Platform processing my data as described in the <a href="#/privacy" style={{color:'var(--blue)'}}>Privacy Policy</a>. Data is processed under GDPR, POPIA, and Nigeria's NDPA 2023.</span>
+                </label>
+              </div>
+              <button type="submit" className="btn btn-primary btn-lg" style={{width:'100%', justifyContent:'center'}} disabled={loading}>
+                {loading ? <><span className="spinner" style={{width:16,height:16}}/> Creating account…</> : 'Create account'}
+              </button>
+            </form>
+          </div>
+        </div>
+        <p style={{textAlign:'center', marginTop:20, fontSize:14, color:'var(--gray-600)'}}>
+          Already have an account? <a href="#/login" style={{color:'var(--blue)', fontWeight:500}}>Sign in</a>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Sidebar Navigation ─────────────────────────────────────────
+function Sidebar({ path, navigate, user }) {
+  const { logout } = useAuth();
+  const isActive = (p) => path.startsWith(p) ? 'nav-item active' : 'nav-item';
+
+  return (
+    <aside className="sidebar" role="navigation" aria-label="Main navigation">
+      <div className="sidebar-brand">
+        <h1>🌍 CRI Platform</h1>
+        <p>Cultural Readiness Index</p>
+      </div>
+      <nav className="sidebar-nav">
+        <div className="nav-section">
+          <div className="nav-section-label">Overview</div>
+          <div className={isActive('/dashboard')} onClick={() => navigate('/dashboard')}>
+            <span className="nav-icon" aria-hidden="true">📊</span> Dashboard
+          </div>
+        </div>
+        <div className="nav-section">
+          <div className="nav-section-label">Assessments</div>
+          <div className={isActive('/assessments')} onClick={() => navigate('/assessments')}>
+            <span className="nav-icon" aria-hidden="true">📋</span> All Assessments
+          </div>
+          <div className="nav-item" onClick={() => navigate('/assessments/new')}>
+            <span className="nav-icon" aria-hidden="true">➕</span> New Assessment
+          </div>
+        </div>
+        <div className="nav-section">
+          <div className="nav-section-label">Reports</div>
+          <div className={isActive('/reports')} onClick={() => navigate('/reports')}>
+            <span className="nav-icon" aria-hidden="true">📄</span> Reports
+          </div>
+        </div>
+        {user?.role === 'superadmin' && (
+          <div className="nav-section">
+            <div className="nav-section-label">Admin</div>
+            <div className={isActive('/admin')} onClick={() => navigate('/admin')}>
+              <span className="nav-icon" aria-hidden="true">⚙️</span> Admin Panel
+            </div>
+          </div>
+        )}
+        <div className="nav-section">
+          <div className="nav-section-label">Account</div>
+          <div className="nav-item" onClick={() => navigate('/settings')}>
+            <span className="nav-icon" aria-hidden="true">🔧</span> Settings
+          </div>
+          <div className="nav-item" onClick={logout}>
+            <span className="nav-icon" aria-hidden="true">🚪</span> Sign out
+          </div>
+        </div>
+      </nav>
+      <div className="sidebar-footer">
+        <div style={{fontWeight:500, color:'rgba(255,255,255,0.8)', marginBottom:2}}>{user?.first_name} {user?.last_name}</div>
+        <div>{user?.org_name}</div>
+        <div style={{marginTop:4}}>
+          <span className="badge" style={{background:'rgba(255,193,7,0.2)', color:'#ffc107', fontSize:11}}>{user?.plan?.toUpperCase() || 'TRIAL'}</span>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+// ── Radar Chart ────────────────────────────────────────────────
+function RadarChart({ teamScores, benchmarks, labels }) {
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current || !teamScores) return;
+    if (chartRef.current) chartRef.current.destroy();
+
+    const dims = Object.keys(teamScores);
+    const chartLabels = dims.map(d => labels[d] || d);
+    const teamData = dims.map(d => teamScores[d] || 0);
+    const benchmarkData = benchmarks ? dims.map(d => benchmarks[d] || 0) : null;
+
+    chartRef.current = new Chart(canvasRef.current, {
+      type: 'radar',
+      data: {
+        labels: chartLabels,
+        datasets: [
+          {
+            label: 'Team Score',
+            data: teamData,
+            fill: true,
+            backgroundColor: 'rgba(0, 85, 164, 0.15)',
+            borderColor: 'rgb(0, 85, 164)',
+            pointBackgroundColor: 'rgb(0, 85, 164)',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: 'rgb(0, 85, 164)',
+            borderWidth: 2,
+          },
+          ...(benchmarkData ? [{
+            label: 'Country Benchmark',
+            data: benchmarkData,
+            fill: true,
+            backgroundColor: 'rgba(200, 150, 12, 0.1)',
+            borderColor: 'rgba(200, 150, 12, 0.8)',
+            pointBackgroundColor: 'rgba(200, 150, 12, 0.8)',
+            pointBorderColor: '#fff',
+            borderWidth: 2,
+            borderDash: [5, 5],
+          }] : []),
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            min: 0, max: 100,
+            ticks: { stepSize: 20, font: { size: 10 } },
+            pointLabels: { font: { size: 11 } },
+            grid: { color: 'rgba(0,0,0,0.06)' },
+          },
+        },
+        plugins: {
+          legend: { position: 'top', labels: { font: { size: 12 }, padding: 16 } },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ${ctx.parsed.r?.toFixed(1)}`,
+            },
+          },
+        },
+      },
+    });
+    return () => { if (chartRef.current) chartRef.current.destroy(); };
+  }, [teamScores, benchmarks]);
+
+  return <canvas ref={canvasRef} aria-label="Cultural dimensions radar chart" role="img" />;
+}
+
+// ── Dashboard ──────────────────────────────────────────────────
+function Dashboard({ navigate }) {
+  const { user } = useAuth();
+  const [assessments, setAssessments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch('/assessments')
+      .then(setAssessments)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const completed = assessments.filter(a => a.status === 'completed').length;
+  const active = assessments.filter(a => a.status === 'active').length;
+  const totalResponses = assessments.reduce((s, a) => s + (a.response_count || 0), 0);
+
+  if (loading) return <div className="loading-page"><span className="spinner spinner-dark" /> Loading dashboard…</div>;
+
+  return (
+    <div className="content">
+      <div className="page-header">
+        <div>
+          <div className="page-title">Welcome back, {user?.first_name} 👋</div>
+          <div className="page-subtitle">{user?.org_name}</div>
+        </div>
+        <button className="btn btn-primary" onClick={() => navigate('/assessments/new')}>+ New Assessment</button>
+      </div>
+
+      <div className="stats-grid">
+        <div className="stat-card"><div className="stat-value">{assessments.length}</div><div className="stat-label">Total Assessments</div></div>
+        <div className="stat-card"><div className="stat-value" style={{color:'var(--green)'}}>{completed}</div><div className="stat-label">Completed</div></div>
+        <div className="stat-card"><div className="stat-value" style={{color:'var(--amber)'}}>{active}</div><div className="stat-label">Active Surveys</div></div>
+        <div className="stat-card"><div className="stat-value">{totalResponses}</div><div className="stat-label">Total Responses</div></div>
+      </div>
+
+      <div className="card">
+        <div className="card-header" style={{display:'flex', justifyContent:'space-between', alignItems:'center', paddingBottom:16, borderBottom:'1px solid var(--gray-200)'}}>
+          <div><div className="card-title">Recent Assessments</div></div>
+          <button className="btn btn-secondary btn-sm" onClick={() => navigate('/assessments')}>View all</button>
+        </div>
+        <div className="table-wrapper">
+          {assessments.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">📋</div>
+              <div className="empty-title">No assessments yet</div>
+              <div className="empty-desc">Create your first assessment to start measuring cultural readiness.</div>
+              <button className="btn btn-primary" onClick={() => navigate('/assessments/new')}>Create Assessment</button>
+            </div>
+          ) : (
+            <table>
+              <thead><tr>
+                <th>Assessment</th><th>Country</th><th>Responses</th><th>Overall Score</th><th>Status</th><th></th>
+              </tr></thead>
+              <tbody>
+                {assessments.slice(0, 5).map(a => (
+                  <tr key={a.id}>
+                    <td style={{fontWeight:500}}>{a.name}</td>
+                    <td>{a.target_country}</td>
+                    <td>{a.response_count}</td>
+                    <td>
+                      {a.overall_score != null ? (
+                        <div className="score-bar-wrap">
+                          <div className="score-bar-track">
+                            <div className={`score-bar-fill ${a.colour_band || 'blue'}`} style={{width:`${a.overall_score}%`}} />
+                          </div>
+                          <span className="score-num">{Number(a.overall_score).toFixed(1)}</span>
+                        </div>
+                      ) : <span style={{color:'var(--gray-400)'}}>—</span>}
+                    </td>
+                    <td>
+                      <span className={`badge badge-${a.status === 'completed' ? 'green' : a.status === 'active' ? 'amber' : 'gray'}`}>
+                        {a.status}
+                      </span>
+                    </td>
+                    <td><button className="btn btn-secondary btn-sm" onClick={() => navigate(`/assessments/${a.id}`)}>View</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Assessment Detail ──────────────────────────────────────────
+const DIMENSION_LABELS = {
+  power_distance: 'Hierarchy & Authority',
+  individualism_collectivism: 'Team & Community',
+  masculinity_femininity: 'Achievement Drive',
+  uncertainty_avoidance: 'Rules & Risk',
+  long_term_orientation: 'Time Perception',
+  indulgence_restraint: 'Work-Life Integration',
+  communication_style: 'Communication Style',
+};
+
+function AssessmentDetail({ id, navigate }) {
+  const [assessment, setAssessment] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('overview');
+  const [inviteEmails, setInviteEmails] = useState('');
+  const [inviteStatus, setInviteStatus] = useState('');
+  const [computing, setComputing] = useState(false);
+
+  useEffect(() => {
+    apiFetch(`/assessments/${id}`).then(setAssessment).finally(() => setLoading(false));
+  }, [id]);
+
+  const copyLink = () => {
+    const url = `${window.location.origin}${window.location.pathname}#/survey/${assessment.survey_token}`;
+    navigator.clipboard?.writeText(url);
+    alert('Survey link copied!');
+  };
+
+  const sendInvites = async () => {
+    const emails = inviteEmails.split(/[\n,]+/).map(e => e.trim()).filter(Boolean);
+    if (!emails.length) return;
+    setInviteStatus('sending');
+    try {
+      await apiFetch(`/assessments/${id}/invite`, { method:'POST', body: JSON.stringify({ emails }) });
+      setInviteStatus('sent');
+      setInviteEmails('');
+    } catch { setInviteStatus('error'); }
+  };
+
+  const computeScores = async () => {
+    setComputing(true);
+    try {
+      await apiFetch(`/assessments/${id}/compute-scores`, { method:'POST' });
+      const updated = await apiFetch(`/assessments/${id}`);
+      setAssessment(updated);
+    } catch (err) { alert(err.message); }
+    finally { setComputing(false); }
+  };
+
+  if (loading) return <div className="loading-page"><span className="spinner spinner-dark" /></div>;
+  if (!assessment) return <div className="content"><div className="alert alert-error">Assessment not found.</div></div>;
+
+  const hasScores = assessment.overall_score != null;
+
+  return (
+    <div className="content">
+      <button className="btn btn-secondary btn-sm" style={{marginBottom:16}} onClick={() => navigate('/assessments')}>
+        ← Back to assessments
+      </button>
+      <div className="page-header">
+        <div>
+          <div className="page-title">{assessment.name}</div>
+          <div className="page-subtitle">{assessment.target_country} · {assessment.target_industry || 'General'}</div>
+        </div>
+        <div style={{display:'flex', gap:10, flexWrap:'wrap'}}>
+          {assessment.status === 'completed' && (
+            <button className="btn btn-primary" onClick={() => navigate(`/reports/${id}`)}>View Report</button>
+          )}
+          {assessment.status === 'active' && assessment.response_count >= 5 && (
+            <button className="btn btn-primary" onClick={computeScores} disabled={computing}>
+              {computing ? <><span className="spinner" style={{width:14,height:14}} /> Computing…</> : 'Compute Scores'}
+            </button>
+          )}
+          <button className="btn btn-secondary" onClick={copyLink}>📋 Copy Survey Link</button>
+        </div>
+      </div>
+
+      <div className="tabs" role="tablist">
+        {['overview','invite','scores'].map(t => (
+          <div key={t} className={`tab${tab===t?' active':''}`} role="tab" aria-selected={tab===t} onClick={() => setTab(t)}>
+            {t.charAt(0).toUpperCase()+t.slice(1)}
+          </div>
+        ))}
+      </div>
+
+      {tab === 'overview' && (
+        <div>
+          <div className="stats-grid" style={{gridTemplateColumns:'repeat(4, 1fr)'}}>
+            <div className="stat-card"><div className="stat-value">{assessment.response_count}</div><div className="stat-label">Responses received</div></div>
+            <div className="stat-card"><div className="stat-value">{assessment.min_responses}</div><div className="stat-label">Minimum required</div></div>
+            <div className="stat-card">
+              <div className="stat-value">{hasScores ? Number(assessment.overall_score).toFixed(1) : '—'}</div>
+              <div className="stat-label">Overall CRI Score</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">
+                {hasScores ? <span className={`badge badge-${assessment.colour_band}`}>{assessment.colour_band?.toUpperCase()}</span> : '—'}
+              </div>
+              <div className="stat-label">Readiness Band</div>
+            </div>
+          </div>
+
+          {assessment.status === 'active' && (
+            <div className="alert alert-info" style={{marginBottom:20}}>
+              Survey is active. Share the link or invite participants below.
+              {assessment.response_count < assessment.min_responses &&
+                ` Needs ${assessment.min_responses - assessment.response_count} more response(s) to unlock scoring.`}
+            </div>
+          )}
+
+          {hasScores && (
+            <div className="card" style={{marginBottom:20}}>
+              <div className="card-header" style={{paddingBottom:16}}>
+                <div className="card-title">Cultural Profile</div>
+              </div>
+              <div className="card-body">
+                <div className="chart-container">
+                  <RadarChart
+                    teamScores={{
+                      power_distance: assessment.power_distance,
+                      individualism_collectivism: assessment.individualism_collectivism,
+                      masculinity_femininity: assessment.masculinity_femininity,
+                      uncertainty_avoidance: assessment.uncertainty_avoidance,
+                      long_term_orientation: assessment.long_term_orientation,
+                      indulgence_restraint: assessment.indulgence_restraint,
+                      communication_style: assessment.communication_style,
+                    }}
+                    benchmarks={null}
+                    labels={DIMENSION_LABELS}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'invite' && (
+        <div className="card">
+          <div className="card-header"><div className="card-title">Invite Participants</div></div>
+          <div className="card-body">
+            <div className="form-group">
+              <label className="form-label">Survey link (share directly)</label>
+              <div style={{display:'flex', gap:10}}>
+                <input type="text" className="form-input" readOnly
+                  value={`${window.location.origin}${window.location.pathname}#/survey/${assessment.survey_token}`} />
+                <button className="btn btn-secondary btn-sm" onClick={copyLink}>Copy</button>
+              </div>
+              <div className="form-hint">No login required for survey participants. Responses are anonymous.</div>
+            </div>
+            <hr className="divider" />
+            <div className="form-group">
+              <label className="form-label">Send email invitations</label>
+              <textarea className="form-input" rows={5} placeholder="Enter email addresses, one per line or comma-separated"
+                value={inviteEmails} onChange={e => setInviteEmails(e.target.value)}
+                style={{resize:'vertical'}} />
+            </div>
+            <button className="btn btn-primary" onClick={sendInvites} disabled={inviteStatus === 'sending'}>
+              {inviteStatus === 'sending' ? <><span className="spinner" style={{width:14,height:14}} /> Sending…</> : 'Send Invitations'}
+            </button>
+            {inviteStatus === 'sent' && <div className="alert alert-success" style={{marginTop:12}}>Invitations sent!</div>}
+            {inviteStatus === 'error' && <div className="alert alert-error" style={{marginTop:12}}>Failed to send. Try again.</div>}
+          </div>
+        </div>
+      )}
+
+      {tab === 'scores' && hasScores && (
+        <div className="card">
+          <div className="card-header"><div className="card-title">Dimension Scores</div></div>
+          <div className="card-body">
+            {Object.entries(DIMENSION_LABELS).map(([dim, label]) => {
+              const score = assessment[dim];
+              if (score == null) return null;
+              const band = score >= 70 ? 'green' : score >= 40 ? 'amber' : 'red';
+              return (
+                <div key={dim} style={{marginBottom:16}}>
+                  <div style={{display:'flex', justifyContent:'space-between', marginBottom:6}}>
+                    <span style={{fontSize:14, fontWeight:500}}>{label}</span>
+                    <span style={{fontSize:14, fontWeight:700}}>{Number(score).toFixed(1)}</span>
+                  </div>
+                  <div className="score-bar-track" style={{height:10}}>
+                    <div className={`score-bar-fill ${band}`} style={{width:`${score}%`}} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── New Assessment Form ────────────────────────────────────────
+function NewAssessment({ navigate }) {
+  const [form, setForm] = useState({ name:'', description:'', targetCountry:'Nigeria', targetIndustry:'Technology', minResponses:5 });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const f = k => e => setForm(p => ({...p, [k]: e.target.value}));
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true); setError('');
+    try {
+      const result = await apiFetch('/assessments', {
+        method: 'POST',
+        body: JSON.stringify({ ...form, minResponses: Number(form.minResponses) }),
+      });
+      // Activate the assessment
+      navigate(`/assessments/${result.id}`);
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div className="content" style={{maxWidth:600}}>
+      <button className="btn btn-secondary btn-sm" style={{marginBottom:16}} onClick={() => navigate('/assessments')}>← Back</button>
+      <div className="page-title" style={{marginBottom:24}}>Create New Assessment</div>
+      {error && <div className="alert alert-error">{error}</div>}
+      <div className="card">
+        <div className="card-body">
+          <form onSubmit={submit}>
+            <div className="form-group">
+              <label className="form-label">Assessment name *</label>
+              <input type="text" className="form-input" required value={form.name} onChange={f('name')} placeholder="e.g. Lagos Expansion Team Q1 2026" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Description</label>
+              <textarea className="form-input" rows={3} value={form.description} onChange={f('description')} placeholder="Optional context for this assessment" style={{resize:'vertical'}} />
+            </div>
+            <div className="two-col">
+              <div className="form-group">
+                <label className="form-label">Target country *</label>
+                <select className="form-select" value={form.targetCountry} onChange={f('targetCountry')} required>
+                  {['Nigeria','Ghana','Kenya','South Africa','Egypt','Ethiopia'].map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Industry</label>
+                <select className="form-select" value={form.targetIndustry} onChange={f('targetIndustry')}>
+                  {['Technology','Finance','Healthcare','Manufacturing','Telecommunications','Consulting','General'].map(i => <option key={i}>{i}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Minimum responses to unlock scores</label>
+              <input type="number" className="form-input" min={3} max={100} value={form.minResponses} onChange={f('minResponses')} />
+              <div className="form-hint">We recommend at least 5 responses to ensure anonymity.</div>
+            </div>
+            <button type="submit" className="btn btn-primary btn-lg" style={{width:'100%', justifyContent:'center'}} disabled={loading}>
+              {loading ? <><span className="spinner" style={{width:16,height:16}} /> Creating…</> : 'Create Assessment & Get Survey Link'}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Survey (Public) ────────────────────────────────────────────
+const NIGERIA_QUESTIONS = [
+  { dimension:'Hierarchy & Authority', id:'power_distance', desc:'Measures acceptance of unequal power distribution in the workplace.', questions:[
+    { id:'PD1', text:'Decisions made by senior leaders should be implemented without being questioned by junior team members.' },
+    { id:'PD2', text:'It is important to address senior colleagues by their formal titles (e.g., Mr., Mrs., Dr.) to show respect.' },
+    { id:'PD3', text:'Directly challenging a manager\'s idea in a team meeting is a sign of disrespect.' },
+    { id:'PD4', text:'The best managers give their team precise instructions on what to do and how to do it.' },
+  ]},
+  { dimension:'Team & Community Orientation', id:'individualism_collectivism', desc:'Measures group vs. individual orientation — loyalty, harmony, and collective success.', questions:[
+    { id:'IC1', text:'The success of the team as a whole is more important than any individual\'s recognition.' },
+    { id:'IC2', text:'Building strong personal relationships with colleagues by inquiring about their family and well-being is essential for getting work done effectively.' },
+    { id:'IC3', text:'Publicly celebrating the team\'s success is more effective than publicly praising one individual.' },
+    { id:'IC4', text:'A company should show concern for an employee\'s well-being outside of work, like a family.' },
+  ]},
+  { dimension:'Drive for Achievement', id:'masculinity_femininity', desc:'Measures orientation toward competition and recognition vs. quality of life and cooperation.', questions:[
+    { id:'MF1', text:'Being recognized as the best performer is a primary motivator for me.' },
+    { id:'MF2', text:'I prefer a collaborative work environment over a highly competitive one.' },
+    { id:'MF3', text:'Work-life balance and a friendly atmosphere are more important than a high salary and bonus.' },
+    { id:'MF4', text:'Conflicts at work are best resolved by open competition to find the best idea.' },
+  ]},
+  { dimension:'Attitude to Rules & Risk', id:'uncertainty_avoidance', desc:'Measures preference for clear rules and structure vs. comfort with ambiguity.', questions:[
+    { id:'UA1', text:'It is important to have clear rules and procedures for every situation.' },
+    { id:'UA2', text:'I feel comfortable starting a project even if the requirements are not perfectly clear.' },
+    { id:'UA3', text:'Company rules should not be broken, even if it\'s for the good of the company.' },
+    { id:'UA4', text:'Job security is more important to me than taking on a risky but innovative new role.' },
+  ]},
+  { dimension:'Time Perception & Tradition', id:'long_term_orientation', desc:'Measures focus on quick results and tradition vs. investment in the long-term future.', questions:[
+    { id:'LTO1', text:'Achieving quick, short-term results is my main priority on a project.' },
+    { id:'LTO2', text:'We should stick to established traditions and ways of working rather than trying new things.' },
+    { id:'LTO3', text:'I am willing to invest time in a project that will only pay off in the distant future.' },
+  ]},
+  { dimension:'Work-Life Integration', id:'indulgence_restraint', desc:'Measures enjoyment of life and fun vs. restraint controlled by social norms.', questions:[
+    { id:'IR1', text:'It\'s important to celebrate successes and have fun with colleagues at work.' },
+    { id:'IR2', text:'Work should be taken very seriously, with a clear separation from personal enjoyment.' },
+    { id:'IR3', text:'Spending money on leisure and personal enjoyment is important to me.' },
+  ]},
+  { dimension:'Communication Style', id:'communication_style', desc:'Measures directness vs. indirect, high-context communication.', questions:[
+    { id:'CS1', text:'When giving feedback, it is more important to be polite and avoid causing offense than to be completely direct.' },
+    { id:'CS2', text:'I prefer communication to be precise, simple, and explicit.' },
+    { id:'CS3', text:'Reading "between the lines" is often necessary to understand what a colleague truly means.' },
+  ]},
+];
+
+const LIKERT_LABELS = ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'];
+
+function SurveyPage({ token }) {
+  const [step, setStep] = useState(0); // 0 = intro, 1-7 = dimensions, 8 = submit
+  const [answers, setAnswers] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const totalDims = NIGERIA_QUESTIONS.length;
+  const currentDim = NIGERIA_QUESTIONS[step - 1];
+
+  const setAnswer = (qid, val) => setAnswers(p => ({...p, [qid]: Number(val)}));
+
+  const currentComplete = step === 0 ? true :
+    currentDim?.questions.every(q => answers[q.id] != null);
+
+  const submit = async () => {
+    setSubmitting(true); setError('');
+    try {
+      await apiFetch(`/survey/${token}/submit`, {
+        method: 'POST',
+        body: JSON.stringify({ answers }),
+      });
+      setSubmitted(true);
+    } catch (err) {
+      if (!navigator.onLine) setError('You appear to be offline. Please check your connection and try again.');
+      else setError(err.message || 'Submission failed. Please try again.');
+    }
+    finally { setSubmitting(false); }
+  };
+
+  if (submitted) return (
+    <div className="survey-wrap" style={{textAlign:'center', paddingTop:80}}>
+      <div style={{fontSize:64, marginBottom:24}}>🎉</div>
+      <h2 style={{fontSize:24, fontWeight:700, color:'var(--navy)', marginBottom:12}}>Thank you!</h2>
+      <p style={{fontSize:16, color:'var(--gray-600)'}}>Your response has been recorded. Your answers are completely anonymous.</p>
+    </div>
+  );
+
+  return (
+    <div className="survey-wrap">
+      <div className="survey-header">
+        <div style={{display:'flex', justifyContent:'center', marginBottom:16}}>
+          <div style={{fontSize:28, fontWeight:800, color:'var(--navy)'}}>🌍 CRI Survey</div>
+        </div>
+        {step > 0 && (
+          <>
+            <div className="survey-progress" role="progressbar" aria-valuenow={step} aria-valuemin={0} aria-valuemax={totalDims}>
+              <div className="survey-progress-fill" style={{width:`${(step/totalDims)*100}%`}} />
+            </div>
+            <div className="survey-step">{step} of {totalDims} dimensions</div>
+          </>
+        )}
+      </div>
+
+      {step === 0 && (
+        <div className="card">
+          <div className="card-body" style={{textAlign:'center', padding:'40px'}}>
+            <div style={{fontSize:40, marginBottom:16}}>🌍</div>
+            <h2 style={{fontSize:22, fontWeight:700, color:'var(--navy)', marginBottom:12}}>Cultural Readiness Survey</h2>
+            <p style={{fontSize:15, color:'var(--gray-600)', marginBottom:8, lineHeight:1.6}}>
+              This anonymous survey measures cultural dimensions in your workplace. Your honest responses help your organisation improve cross-cultural collaboration.
+            </p>
+            <div style={{display:'flex', gap:20, justifyContent:'center', margin:'24px 0', flexWrap:'wrap'}}>
+              {['🔒 Anonymous', '⏱ 10-15 minutes', '📊 7 dimensions'].map(f => (
+                <div key={f} style={{background:'var(--gray-50)', padding:'8px 16px', borderRadius:6, fontSize:14, color:'var(--gray-600)'}}>{f}</div>
+              ))}
+            </div>
+            <button className="btn btn-primary btn-lg" onClick={() => setStep(1)}>Start Survey →</button>
+          </div>
+        </div>
+      )}
+
+      {step > 0 && step <= totalDims && (
+        <div>
+          <div className="dimension-card">
+            <div style={{display:'flex', gap:12, alignItems:'flex-start', marginBottom:20}}>
+              <div style={{background:'var(--blue)', color:'white', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, flexShrink:0, marginTop:2}}>Dimension {step}</div>
+              <div>
+                <div className="dimension-name">{currentDim.dimension}</div>
+                <div className="dimension-desc">{currentDim.desc}</div>
+              </div>
+            </div>
+            {currentDim.questions.map((q, qi) => (
+              <div key={q.id} className="question-item">
+                <div className="question-text"><strong>{qi + 1}.</strong> {q.text}</div>
+                <div className="likert-scale" role="radiogroup" aria-label={q.text}>
+                  {[1,2,3,4,5].map(v => (
+                    <div key={v} className="likert-option">
+                      <input type="radio" name={q.id} id={`${q.id}-${v}`} value={v}
+                        checked={answers[q.id] === v}
+                        onChange={() => setAnswer(q.id, v)} />
+                      <label htmlFor={`${q.id}-${v}`}>
+                        <span className="likert-num">{v}</span>
+                        <span style={{fontSize:10, lineHeight:1.2}}>{LIKERT_LABELS[v-1]}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <div className="likert-labels">
+                  <span>Strongly Disagree</span><span>Strongly Agree</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{display:'flex', justifyContent:'space-between'}}>
+            <button className="btn btn-secondary" onClick={() => setStep(s => Math.max(0, s-1))}>← Back</button>
+            <button className="btn btn-primary" disabled={!currentComplete}
+              onClick={() => step < totalDims ? setStep(s => s+1) : setStep(totalDims+1)}>
+              {step < totalDims ? 'Next →' : 'Review Answers →'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step > totalDims && (
+        <div>
+          <div className="card" style={{marginBottom:20}}>
+            <div className="card-header"><div className="card-title">Review your answers</div></div>
+            <div className="card-body">
+              <p style={{fontSize:14, color:'var(--gray-600)', marginBottom:16}}>
+                You've answered all {Object.keys(answers).length} questions. Ready to submit?
+              </p>
+              {error && <div className="alert alert-error">{error}</div>}
+            </div>
+          </div>
+          <div style={{display:'flex', justifyContent:'space-between'}}>
+            <button className="btn btn-secondary" onClick={() => setStep(totalDims)}>← Edit answers</button>
+            <button className="btn btn-primary btn-lg" onClick={submit} disabled={submitting}>
+              {submitting ? <><span className="spinner" style={{width:16,height:16}} /> Submitting…</> : '✓ Submit Survey'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Reports List ───────────────────────────────────────────────
+function ReportsList({ navigate }) {
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch('/assessments')
+      .then(list => setReports(list.filter(a => a.report_status === 'ready' || a.overall_score != null)))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="loading-page"><span className="spinner spinner-dark" /></div>;
+
+  return (
+    <div className="content">
+      <div className="page-header">
+        <div><div className="page-title">Reports</div><div className="page-subtitle">Your completed assessment reports</div></div>
+      </div>
+      {reports.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">📄</div>
+          <div className="empty-title">No reports yet</div>
+          <div className="empty-desc">Complete an assessment to generate your first CRI report.</div>
+          <button className="btn btn-primary" onClick={() => navigate('/assessments/new')}>Create Assessment</button>
+        </div>
+      ) : (
+        <div className="card">
+          <div className="table-wrapper">
+            <table>
+              <thead><tr><th>Assessment</th><th>Country</th><th>Score</th><th>Band</th><th>Actions</th></tr></thead>
+              <tbody>
+                {reports.map(r => (
+                  <tr key={r.id}>
+                    <td style={{fontWeight:500}}>{r.name}</td>
+                    <td>{r.target_country}</td>
+                    <td>{r.overall_score != null ? Number(r.overall_score).toFixed(1) : '—'}</td>
+                    <td>{r.colour_band && <span className={`badge badge-${r.colour_band}`}>{r.colour_band.toUpperCase()}</span>}</td>
+                    <td style={{display:'flex', gap:8}}>
+                      <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/reports/${r.id}`)}>View</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => window.open(`${API_BASE}/reports/${r.id}/html`, '_blank')}>Download HTML</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Admin Panel ────────────────────────────────────────────────
+
+// FIX: Superadmin promotion form (no more raw SQL)
+function PromoteUserForm() {
+  const [email, setEmail] = useState('');
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+  const promote = async (e) => {
+    e.preventDefault(); setMsg(''); setErr('');
+    try {
+      await apiFetch('/admin/promote', { method: 'POST', body: JSON.stringify({ email }) });
+      setMsg(`${email} promoted to superadmin.`); setEmail('');
+    } catch (er) { setErr(er.message); }
+  };
+  return (
+    <form onSubmit={promote} style={{display:'flex', gap:10, alignItems:'flex-end'}}>
+      <div className="form-group" style={{flex:1, marginBottom:0}}>
+        <label className="form-label">User email</label>
+        <input type="email" className="form-input" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="user@example.com" />
+      </div>
+      <button type="submit" className="btn btn-primary">Promote</button>
+      {msg && <span style={{fontSize:13,color:'var(--green)'}}>{msg}</span>}
+      {err && <span style={{fontSize:13,color:'var(--red)'}}>{err}</span>}
+    </form>
+  );
+}
+
+function AdminPanel() {
+  const [stats, setStats] = useState(null);
+  const [assessments, setAssessments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [adminPage, setAdminPage] = useState(0);
+
+  useEffect(() => {
+    Promise.all([
+      apiFetch('/admin/stats'),
+      apiFetch('/admin/assessments'),
+    ]).then(([s, a]) => { setStats(s); setAssessments(a); }).finally(() => setLoading(false));
+  }, []);
+
+  const exportCSV = () => window.open(`${API_BASE}/admin/export`, '_blank');
+
+  if (loading) return <div className="loading-page"><span className="spinner spinner-dark" /></div>;
+
+  return (
+    <div className="content">
+      <div className="page-header">
+        <div><div className="page-title">Admin Panel</div></div>
+        <button className="btn btn-secondary" onClick={exportCSV}>⬇ Export CSV</button>
+      </div>
+
+      {stats && (
+        <div className="stats-grid">
+          <div className="stat-card"><div className="stat-value">{stats.totalOrganizations}</div><div className="stat-label">Organisations</div></div>
+          <div className="stat-card"><div className="stat-value">{stats.totalResponses}</div><div className="stat-label">Total Responses</div></div>
+          <div className="stat-card"><div className="stat-value">${((stats.totalRevenueCents||0)/100).toLocaleString()}</div><div className="stat-label">Revenue</div></div>
+          <div className="stat-card"><div className="stat-value">{stats.totalPayments}</div><div className="stat-label">Payments</div></div>
+        </div>
+      )}
+
+
+        {/* FIX: Superadmin promotion tool */}
+        <div className="card" style={{marginBottom:20}}>
+          <div className="card-header" style={{paddingBottom:16,borderBottom:'1px solid var(--gray-200)'}}><div className="card-title">Promote to Superadmin</div></div>
+          <div className="card-body">
+            <PromoteUserForm />
+          </div>
+        </div>
+
+      <div className="card">
+        <div className="card-header" style={{paddingBottom:16, borderBottom:'1px solid var(--gray-200)'}}><div className="card-title">All Assessments</div></div>
+        <div className="table-wrapper">
+          <table>
+            <thead><tr><th>Organisation</th><th>Assessment</th><th>Country</th><th>Responses</th><th>Score</th><th>Status</th></tr></thead>
+            <tbody>
+              {assessments.slice(adminPage*20, adminPage*20+20).map(a => (
+                <tr key={a.id}>
+                  <td style={{fontWeight:500}}>{a.org_name}</td>
+                  <td>{a.name}</td>
+                  <td>{a.target_country}</td>
+                  <td>{a.response_count}</td>
+                  <td>{a.overall_score != null ? Number(a.overall_score).toFixed(1) : '—'}</td>
+                  <td><span className={`badge badge-${a.status === 'completed' ? 'green' : a.status === 'active' ? 'amber' : 'gray'}`}>{a.status}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {assessments.length > 20 && (
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 24px',borderTop:'1px solid var(--gray-200)',fontSize:13,color:'var(--gray-600)'}}>
+            <span>Showing {adminPage*20+1}–{Math.min((adminPage+1)*20, assessments.length)} of {assessments.length}</span>
+            <div style={{display:'flex',gap:8}}>
+              <button className="btn btn-secondary btn-sm" onClick={()=>setAdminPage(p=>p-1)} disabled={adminPage===0}>← Prev</button>
+              <button className="btn btn-secondary btn-sm" onClick={()=>setAdminPage(p=>p+1)} disabled={(adminPage+1)*20>=assessments.length}>Next →</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Protected Layout ───────────────────────────────────────────
+function AppLayout({ children, path, navigate }) {
+  const { user } = useAuth();
+  return (
+    <div className="layout">
+      <Sidebar path={path} navigate={navigate} user={user} />
+      <div className="main">
+        <header className="topbar">
+          <div style={{fontWeight:500, color:'var(--navy)', fontSize:14}}>
+            {path.startsWith('/dashboard') ? 'Dashboard' :
+             path.startsWith('/assessments/new') ? 'New Assessment' :
+             path.startsWith('/assessments') ? 'Assessments' :
+             path.startsWith('/reports') ? 'Reports' :
+             path.startsWith('/admin') ? 'Admin Panel' : path.startsWith('/settings') ? 'Settings' : 'CRI Platform'}
+          </div>
+          <div style={{fontSize:13, color:'var(--gray-600)'}}>
+            {user?.org_name} · <span style={{color:'var(--blue)', fontWeight:500}}>{user?.plan?.toUpperCase() || 'TRIAL'}</span>
+          </div>
+        </header>
+        <main id="main-content">{children}</main>
+      </div>
+    </div>
+  );
+}
+
+// ── Main App ───────────────────────────────────────────────────
+function App() {
+  const { user, loading } = useAuth();
+  const { path, navigate } = useRoute();
+
+  if (loading) return (
+    <div style={{display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', gap:12, color:'var(--gray-600)', fontSize:16}}>
+      <span className="spinner spinner-dark" style={{width:24, height:24}} /> Loading…
+    </div>
+  );
+
+  // Public routes
+  if (path === '/' || path === '') return <><LandingPage navigate={navigate} /><CookieBanner /></>;
+  if (path === '/login') return <><LoginPage navigate={navigate} /><CookieBanner /></>;
+  if (path === '/forgot-password') return <><ForgotPasswordPage navigate={navigate} /><CookieBanner /></>;
+  if (path === '/reset-password') return <><ResetPasswordPage navigate={navigate} /><CookieBanner /></>;
+  if (path === '/register') return <><RegisterPage navigate={navigate} /><CookieBanner /></>;
+  if (path.startsWith('/survey/')) {
+    const token = path.split('/')[2];
+    return <><SurveyPage token={token} /><CookieBanner /></>;
+  }
+
+  // Redirect unauthenticated
+  if (!user) {
+    navigate('/login');
+    return null;
+  }
+
+  // Protected routes
+  const renderPage = () => {
+    if (path === '/dashboard' || path === '/') return <Dashboard navigate={navigate} />;
+    if (path === '/assessments/new') return <NewAssessment navigate={navigate} />;
+    if (path.match(/^\/assessments\/[^/]+$/)) {
+      const id = path.split('/')[2];
+      return <AssessmentDetail id={id} navigate={navigate} />;
+    }
+    if (path === '/assessments') return <AssessmentsList navigate={navigate} />;
+    if (path === '/reports') return <ReportsList navigate={navigate} />;
+    if (path.match(/^\/reports\/.+/)) {
+      const id = path.split('/')[2];
+      return <ReportView id={id} navigate={navigate} />;
+    }
+    if (path === '/admin') return <AdminPanel />;
+    if (path === '/settings') return <SettingsPage navigate={navigate} />;
+    return <Dashboard navigate={navigate} />;
+  };
+
+  return (
+    <AppLayout path={path} navigate={navigate}>
+      {renderPage()}
+    </AppLayout>
+  );
+}
+
+// ── Assessments List ───────────────────────────────────────────
+function AssessmentsList({ navigate }) {
+  const [assessments, setAssessments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch('/assessments').then(setAssessments).finally(() => setLoading(false));
+  }, []);
+
+  const SkeletonTable = () => (
+    <div className="content">
+      <div className="page-header"><div><div className="skeleton skeleton-title" style={{width:180}} /></div></div>
+      <div className="card">
+        <div className="card-body">
+          {[1,2,3,4].map(i => <div key={i} className="skeleton skeleton-row" />)}
+        </div>
+      </div>
+    </div>
+  );
+  if (loading) return <SkeletonTable />;
+
+  return (
+    <div className="content">
+      <div className="page-header">
+        <div><div className="page-title">Assessments</div><div className="page-subtitle">All your cultural readiness assessments</div></div>
+        <button className="btn btn-primary" onClick={() => navigate('/assessments/new')}>+ New Assessment</button>
+      </div>
+      <div className="card">
+        <div className="table-wrapper">
+          {assessments.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">📋</div>
+              <div className="empty-title">No assessments yet</div>
+              <button className="btn btn-primary" onClick={() => navigate('/assessments/new')}>Create your first assessment</button>
+            </div>
+          ) : (
+            <table>
+              <thead><tr><th>Name</th><th>Country</th><th>Responses</th><th>Score</th><th>Status</th><th>Created</th><th></th></tr></thead>
+              <tbody>
+                {assessments.map(a => (
+                  <tr key={a.id}>
+                    <td style={{fontWeight:500}}>{a.name}</td>
+                    <td>{a.target_country}</td>
+                    <td>{a.response_count} / {a.min_responses}</td>
+                    <td>{a.overall_score != null ? `${Number(a.overall_score).toFixed(1)} / 100` : '—'}</td>
+                    <td><span className={`badge badge-${a.status === 'completed' ? 'green' : a.status === 'active' ? 'amber' : 'gray'}`}>{a.status}</span></td>
+                    <td style={{fontSize:13, color:'var(--gray-600)'}}>{new Date(a.created_at).toLocaleDateString()}</td>
+                    <td><button className="btn btn-secondary btn-sm" onClick={() => navigate(`/assessments/${a.id}`)}>Manage</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Report View ────────────────────────────────────────────────
+function ReportView({ id, navigate }) {
+  const [report, setReport] = useState(null);
+  const [assessment, setAssessment] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      apiFetch(`/reports/${id}`).catch(() => null),
+      apiFetch(`/assessments/${id}`),
+    ]).then(([r, a]) => { setReport(r); setAssessment(a); }).finally(() => setLoading(false));
+  }, [id]);
+
+  const generateReport = async () => {
+    setGenerating(true);
+    try {
+      await apiFetch(`/reports/${id}/generate`, { method:'POST', body: JSON.stringify({ includeLLM: true }) });
+      const r = await apiFetch(`/reports/${id}`);
+      setReport(r);
+    } catch (err) { alert(err.message); }
+    finally { setGenerating(false); }
+  };
+
+  if (loading) return <div className="loading-page"><span className="spinner spinner-dark" /></div>;
+
+  return (
+    <div className="content">
+      <button className="btn btn-secondary btn-sm" style={{marginBottom:16}} onClick={() => navigate('/reports')}>← Reports</button>
+      <div className="page-header">
+        <div>
+          <div className="page-title">{assessment?.name}</div>
+          <div className="page-subtitle">{assessment?.target_country} · {assessment?.target_industry}</div>
+        </div>
+        <div style={{display:'flex', gap:10}}>
+          {report?.status === 'ready'
+            ? <a className="btn btn-primary" href={`${API_BASE}/reports/${id}/html`} target="_blank">⬇ Download Report</a>
+            : <button className="btn btn-primary" onClick={generateReport} disabled={generating}>
+                {generating ? <><span className="spinner" style={{width:14,height:14}} /> Generating…</> : '⚡ Generate Report'}
+              </button>
+          }
+        </div>
+      </div>
+
+      {assessment && (
+        <div className="two-col" style={{marginBottom:20}}>
+          <div className="card">
+            <div className="card-body" style={{textAlign:'center'}}>
+              <div style={{fontSize:48, fontWeight:700, color:'var(--navy)'}}>{Number(assessment.overall_score||0).toFixed(1)}</div>
+              <div style={{fontSize:14, color:'var(--gray-600)', marginTop:4}}>Overall CRI Score</div>
+              <div style={{marginTop:12}}>
+                <span className={`badge badge-${assessment.colour_band||'gray'}`} style={{fontSize:14, padding:'6px 16px'}}>
+                  {assessment.colour_band === 'green' ? 'High Readiness' : assessment.colour_band === 'amber' ? 'Moderate Readiness' : 'Developing Readiness'}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-body">
+              <div className="chart-container">
+                <RadarChart
+                  teamScores={{
+                    power_distance: assessment.power_distance,
+                    individualism_collectivism: assessment.individualism_collectivism,
+                    masculinity_femininity: assessment.masculinity_femininity,
+                    uncertainty_avoidance: assessment.uncertainty_avoidance,
+                    long_term_orientation: assessment.long_term_orientation,
+                    indulgence_restraint: assessment.indulgence_restraint,
+                    communication_style: assessment.communication_style,
+                  }}
+                  benchmarks={null}
+                  labels={DIMENSION_LABELS}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {report?.status === 'ready' && (
+        <>
+          {report.strengths && (
+            <div className="card" style={{marginBottom:16}}>
+              <div className="card-header"><div className="card-title">✅ Strengths</div></div>
+              <div className="card-body">
+                {(typeof report.strengths === 'string' ? JSON.parse(report.strengths) : report.strengths).map((s, i) => (
+                  <div key={i} style={{padding:'10px 14px', background:'var(--green-bg)', borderLeft:'4px solid var(--green)', borderRadius:4, marginBottom:8, fontSize:14}}>{s}</div>
+                ))}
+              </div>
+            </div>
+          )}
+          {report.action_steps && (
+            <div className="card">
+              <div className="card-header"><div className="card-title">🎯 Action Steps</div></div>
+              <div className="card-body">
+                {(typeof report.action_steps === 'string' ? JSON.parse(report.action_steps) : report.action_steps).map((s, i) => (
+                  <div key={i} style={{padding:'10px 14px', background:'var(--blue-light)', borderLeft:'4px solid var(--blue)', borderRadius:4, marginBottom:8, fontSize:14}}>
+                    <strong>{i+1}.</strong> {s}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {!report && (
+        <div className="card">
+          <div className="card-body empty-state">
+            <div className="empty-icon">📄</div>
+            <div className="empty-title">No report generated yet</div>
+            <div className="empty-desc">Generate your report to access detailed insights and AI recommendations.</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+// FIX: Forgot Password Page
+function ForgotPasswordPage({ navigate }) {
+  const [email, setEmail] = useState('');
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true); setError('');
+    try {
+      await apiFetch('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
+      setSent(true);
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div style={{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--gray-50)'}}>
+      <div style={{width:'100%', maxWidth:400, padding:'0 20px'}}>
+        <div style={{textAlign:'center', marginBottom:32}}>
+          <div style={{fontSize:32, marginBottom:8}}>🔑</div>
+          <h1 style={{fontSize:22, fontWeight:700, color:'var(--navy)'}}>Reset your password</h1>
+          <p style={{fontSize:14, color:'var(--gray-600)', marginTop:4}}>We'll send a reset link to your email</p>
+        </div>
+        <div className="card">
+          <div className="card-body">
+            {sent ? (
+              <div style={{textAlign:'center', padding:'16px 0'}}>
+                <div style={{fontSize:40, marginBottom:12}}>📬</div>
+                <div style={{fontWeight:600, marginBottom:8}}>Check your inbox</div>
+                <p style={{fontSize:14, color:'var(--gray-600)'}}>If that email is registered, a reset link has been sent. It expires in 1 hour.</p>
+                <button className="btn btn-primary" style={{marginTop:20, width:'100%', justifyContent:'center'}} onClick={() => navigate('/login')}>Back to sign in</button>
+              </div>
+            ) : (
+              <>
+                {error && <div className="alert alert-error">{error}</div>}
+                <form onSubmit={submit}>
+                  <div className="form-group">
+                    <label className="form-label">Email address</label>
+                    <input type="email" className="form-input" required autoFocus value={email} onChange={e => setEmail(e.target.value)} />
+                  </div>
+                  <button type="submit" className="btn btn-primary btn-lg" style={{width:'100%', justifyContent:'center'}} disabled={loading}>
+                    {loading ? <><span className="spinner" style={{width:16,height:16}}/> Sending…</> : 'Send reset link'}
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+        <p style={{textAlign:'center', marginTop:20, fontSize:14, color:'var(--gray-600)'}}>
+          <a href="#/login" style={{color:'var(--blue)'}}>← Back to sign in</a>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// FIX: Reset Password Page (linked from email)
+function ResetPasswordPage({ navigate }) {
+  const token = new URLSearchParams(window.location.search).get('token') || '';
+  const [form, setForm] = useState({ password: '', confirm: '' });
+  const [done, setDone] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (form.password !== form.confirm) { setError('Passwords do not match.'); return; }
+    setLoading(true); setError('');
+    try {
+      await apiFetch('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password: form.password }) });
+      setDone(true);
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div style={{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--gray-50)'}}>
+      <div style={{width:'100%', maxWidth:400, padding:'0 20px'}}>
+        <div style={{textAlign:'center', marginBottom:32}}>
+          <h1 style={{fontSize:22, fontWeight:700, color:'var(--navy)'}}>Set new password</h1>
+        </div>
+        <div className="card">
+          <div className="card-body">
+            {done ? (
+              <div style={{textAlign:'center', padding:'16px 0'}}>
+                <div style={{fontSize:40, marginBottom:12}}>✅</div>
+                <div style={{fontWeight:600, marginBottom:8}}>Password updated!</div>
+                <button className="btn btn-primary" style={{marginTop:20, width:'100%', justifyContent:'center'}} onClick={() => navigate('/login')}>Sign in</button>
+              </div>
+            ) : (
+              <>
+                {!token && <div className="alert alert-error">Invalid or missing reset token. Please request a new link.</div>}
+                {error && <div className="alert alert-error">{error}</div>}
+                <form onSubmit={submit}>
+                  <div className="form-group">
+                    <label className="form-label">New password</label>
+                    <input type="password" className="form-input" required minLength={8} value={form.password} onChange={e => setForm(p=>({...p, password:e.target.value}))} />
+                    <div className="form-hint">Minimum 8 characters</div>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Confirm password</label>
+                    <input type="password" className="form-input" required value={form.confirm} onChange={e => setForm(p=>({...p, confirm:e.target.value}))} />
+                  </div>
+                  <button type="submit" className="btn btn-primary btn-lg" style={{width:'100%', justifyContent:'center'}} disabled={loading || !token}>
+                    {loading ? <><span className="spinner" style={{width:16,height:16}}/> Saving…</> : 'Set new password'}
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// FIX: Settings Page (was missing entirely)
+function SettingsPage({ navigate }) {
+  const { user } = useAuth();
+  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwMsg, setPwMsg] = useState('');
+  const [pwErr, setPwErr] = useState('');
+
+  const changePassword = async (e) => {
+    e.preventDefault();
+    if (pwForm.newPassword !== pwForm.confirm) { setPwErr('Passwords do not match.'); return; }
+    setPwLoading(true); setPwErr(''); setPwMsg('');
+    try {
+      await apiFetch('/auth/change-password', { method: 'POST', body: JSON.stringify({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword }) });
+      setPwMsg('Password changed successfully.');
+      setPwForm({ currentPassword: '', newPassword: '', confirm: '' });
+    } catch (err) { setPwErr(err.message); }
+    finally { setPwLoading(false); }
+  };
+
+  return (
+    <div className="content">
+      <div className="page-header">
+        <div><div className="page-title">Settings</div><div className="page-subtitle">Manage your account</div></div>
+      </div>
+
+      <div style={{maxWidth:560}}>
+        <div className="card" style={{marginBottom:20}}>
+          <div className="card-header" style={{paddingBottom:16, borderBottom:'1px solid var(--gray-200)'}}><div className="card-title">Account details</div></div>
+          <div className="card-body">
+            <div className="form-group">
+              <label className="form-label">Email</label>
+              <input className="form-input" value={user?.email || ''} disabled style={{background:'var(--gray-50)'}} />
+            </div>
+            <div className="two-col">
+              <div className="form-group">
+                <label className="form-label">First name</label>
+                <input className="form-input" value={user?.first_name || ''} disabled style={{background:'var(--gray-50)'}} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Last name</label>
+                <input className="form-input" value={user?.last_name || ''} disabled style={{background:'var(--gray-50)'}} />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Organisation</label>
+              <input className="form-input" value={user?.org_name || ''} disabled style={{background:'var(--gray-50)'}} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Plan</label>
+              <input className="form-input" value={(user?.plan || 'trial').toUpperCase()} disabled style={{background:'var(--gray-50)'}} />
+            </div>
+          </div>
+        </div>
+
+        <div className="card" style={{marginBottom:20}}>
+          <div className="card-header" style={{paddingBottom:16, borderBottom:'1px solid var(--gray-200)'}}><div className="card-title">Change password</div></div>
+          <div className="card-body">
+            {pwMsg && <div className="alert alert-success">{pwMsg}</div>}
+            {pwErr && <div className="alert alert-error">{pwErr}</div>}
+            <form onSubmit={changePassword}>
+              <div className="form-group">
+                <label className="form-label">Current password</label>
+                <input type="password" className="form-input" required value={pwForm.currentPassword} onChange={e => setPwForm(p=>({...p, currentPassword:e.target.value}))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">New password</label>
+                <input type="password" className="form-input" required minLength={8} value={pwForm.newPassword} onChange={e => setPwForm(p=>({...p, newPassword:e.target.value}))} />
+                <div className="form-hint">Minimum 8 characters</div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Confirm new password</label>
+                <input type="password" className="form-input" required value={pwForm.confirm} onChange={e => setPwForm(p=>({...p, confirm:e.target.value}))} />
+              </div>
+              <button type="submit" className="btn btn-primary" disabled={pwLoading}>
+                {pwLoading ? <><span className="spinner" style={{width:14,height:14}}/> Saving…</> : 'Update password'}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header" style={{paddingBottom:16, borderBottom:'1px solid var(--gray-200)'}}><div className="card-title" style={{color:'var(--red)'}}>Data & Privacy</div></div>
+          <div className="card-body">
+            <p style={{fontSize:14, color:'var(--gray-600)', marginBottom:16}}>
+              You can request deletion of your account data under GDPR, POPIA, or Nigeria NDPA 2023. We will process it within 30 days.
+            </p>
+            <button className="btn btn-danger btn-sm" onClick={async () => {
+              if (!window.confirm('Request deletion of all your account data? This cannot be undone.')) return;
+              await apiFetch('/data-deletion-request', { method:'POST', body: JSON.stringify({ email: user?.email, reason: 'User-initiated deletion via settings' }) });
+              alert('Deletion request submitted. We'll process it within 30 days.');
+            }}>
+              Request data deletion
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Mount
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <AuthProvider>
+    <App />
+  </AuthProvider>
+);
+</script>
+</body>
+</html>

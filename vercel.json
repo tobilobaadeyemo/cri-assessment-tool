@@ -1,5 +1,9 @@
 {
   "buildCommand": "",
-  "installCommand": "",
-  "framework": null
+  "outputDirectory": "frontend",
+  "framework": null,
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
 }
