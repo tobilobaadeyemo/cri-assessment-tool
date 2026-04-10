@@ -1,1 +1,155 @@
-404: Not Found
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRI Platform – Cultural Readiness Index</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>body{font-family:system-ui,sans-serif;background:#f8fafc}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, createContext, useContext } = React;
+const supabaseUrl = 'https://vvoiagwlfhowdyxlkpln.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2b2lhZ3dsZmhvd2R5eGxrcGxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjQyMTQsImV4cCI6MjA5MDgwMDIxNH0.pOX5E5p3tI8lVO5Bi9Ze5tDmv-_9j3gqLUFn7pN2lB8';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+const AuthContext = createContext(null);
+function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => listener?.subscription.unsubscribe();
+  }, []);
+  const login = async (email, password) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  };
+  const logout = async () => { await supabase.auth.signOut(); };
+  const signUp = async (email, password, metadata) => {
+    const { error } = await supabase.auth.signUp({ email, password, options: { data: metadata } });
+    if (error) throw error;
+  };
+  return <AuthContext.Provider value={{ user, loading, login, logout, signUp }}>{children}</AuthContext.Provider>;
+}
+function useAuth() { return useContext(AuthContext); }
+function RegisterPage({ navigate }) {
+  const { signUp } = useAuth();
+  const [form, setForm] = useState({ email:'', password:'', firstName:'', lastName:'', orgName:'', industry:'', gdprConsent:false });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const f = (k) => e => setForm(p => ({...p, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value}));
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!form.gdprConsent) { setError("You must consent to data processing."); return; }
+    setError(""); setLoading(true);
+    try {
+      await signUp(form.email, form.password, {
+        first_name: form.firstName,
+        last_name: form.lastName,
+        organisation_name: form.orgName,
+        industry: form.industry
+      });
+      navigate('/dashboard');
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  };
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Create your CRI account</h1>
+        <p className="text-gray-600 mb-6">Start measuring cultural readiness today</p>
+        {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4">{error}</div>}
+        <form onSubmit={submit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <input type="text" placeholder="First name" className="w-full p-2 border rounded-lg" value={form.firstName} onChange={f('firstName')} required />
+            <input type="text" placeholder="Last name" className="w-full p-2 border rounded-lg" value={form.lastName} onChange={f('lastName')} required />
+          </div>
+          <input type="email" placeholder="Work email" className="w-full p-2 border rounded-lg" value={form.email} onChange={f('email')} required />
+          <input type="password" placeholder="Password (min 8 chars)" className="w-full p-2 border rounded-lg" minLength={8} value={form.password} onChange={f('password')} required />
+          <input type="text" placeholder="Organisation name" className="w-full p-2 border rounded-lg" value={form.orgName} onChange={f('orgName')} required />
+          <select className="w-full p-2 border rounded-lg" value={form.industry} onChange={f('industry')} required>
+            <option value="">Select industry</option>
+            {['Technology','Finance','Healthcare','Manufacturing','Consulting','Other'].map(i => <option key={i}>{i}</option>)}
+          </select>
+          <label className="flex items-start gap-2 text-sm text-gray-600">
+            <input type="checkbox" checked={form.gdprConsent} onChange={f('gdprConsent')} required className="mt-1" />
+            <span>I consent to data processing under GDPR, POPIA, and Nigeria's NDPA 2023.</span>
+          </label>
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50">
+            {loading ? 'Creating account...' : 'Create account'}
+          </button>
+        </form>
+        <p className="text-center text-sm text-gray-600 mt-6">Already have an account? <a href="#/login" className="text-blue-600">Sign in</a></p>
+      </div>
+    </div>
+  );
+}
+function LoginPage({ navigate }) {
+  const { login } = useAuth();
+  const [form, setForm] = useState({ email:'', password:'' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault();
+    setError(''); setLoading(true);
+    try { await login(form.email, form.password); navigate('/dashboard'); }
+    catch(err) { setError(err.message); }
+    finally { setLoading(false); }
+  };
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Sign in to CRI Platform</h1>
+        <p className="text-gray-600 mb-6">Cultural Readiness Index</p>
+        {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4">{error}</div>}
+        <form onSubmit={submit} className="space-y-4">
+          <input type="email" placeholder="Email" className="w-full p-2 border rounded-lg" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
+          <input type="password" placeholder="Password" className="w-full p-2 border rounded-lg" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required />
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">Sign in</button>
+        </form>
+        <p className="text-center text-sm text-gray-600 mt-6">Don't have an account? <a href="#/register" className="text-blue-600">Start free trial</a></p>
+      </div>
+    </div>
+  );
+}
+function Dashboard({ navigate }) {
+  const { user } = useAuth();
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl font-bold">Welcome, {user?.user_metadata?.first_name || user?.email}</h1>
+      <p className="text-gray-600">Your dashboard is ready. (Scoring & reports coming soon)</p>
+      <button onClick={() => navigate('/assessments')} className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg">View Assessments</button>
+    </div>
+  );
+}
+function App() {
+  const { user, loading } = useAuth();
+  const [route, setRoute] = useState(window.location.hash.slice(1) || '/');
+  useEffect(() => {
+    const handler = () => setRoute(window.location.hash.slice(1) || '/');
+    window.addEventListener('hashchange', handler);
+    return () => window.removeEventListener('hashchange', handler);
+  }, []);
+  if (loading) return <div className="p-8 text-center">Loading...</div>;
+  if (!user && route !== '/register' && route !== '/login') return <LoginPage navigate={setRoute} />;
+  if (route === '/register') return <RegisterPage navigate={setRoute} />;
+  if (route === '/login') return <LoginPage navigate={setRoute} />;
+  if (route === '/dashboard' || route === '/') return <Dashboard navigate={setRoute} />;
+  return <div className="p-8">404: Page not found</div>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<AuthProvider><App /></AuthProvider>);
+</script>
+</body>
+</html>
